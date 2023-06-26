@@ -77,6 +77,8 @@ class BouleFeu:
                        pygame.transform.scale(pygame.image.load('pic/fireball3.png'),
                                               (int(taille_cellule * 1.1), int(taille_cellule * 1.3)))]
         self.current_image = 0
+        self.image_counter = 0  # Initialise un compteur d'images à 0
+        self.image_counter_limit = 5  # Nombre d'images avant de passer à la suivante
 
     def deplacer(self):
         if self.direction == "gauche":
@@ -86,7 +88,12 @@ class BouleFeu:
 
     def afficher(self):
         ecran.blit(self.images[self.current_image], (self.x, self.y))
-        self.current_image = (self.current_image + 1) % len(self.images)
+        # On incrémente le compteur d'images à chaque appel de la fonction
+        self.image_counter += 1
+        # Si le compteur d'images atteint la limite, on passe à l'image suivante et on remet le compteur à zéro
+        if self.image_counter >= self.image_counter_limit:
+            self.current_image = (self.current_image + 1) % len(self.images)
+            self.image_counter = 0
 
 
 
