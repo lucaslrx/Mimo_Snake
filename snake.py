@@ -9,6 +9,8 @@ pygame.mixer.init()
 largeur_ecran = 640
 hauteur_ecran = 480
 
+police = pygame.font.Font("arial.ttf", 24)
+
 # Création de la fenêtre de jeu
 ecran = pygame.display.set_mode((largeur_ecran, hauteur_ecran))
 pygame.display.set_caption("Snake Game")
@@ -79,6 +81,11 @@ class Autruche:
             son_autruche.play()
 
 # Fonction principale du jeu
+def afficher_score(longueur):
+    texte = police.render("Pomelos: " + str(longueur), True, (255, 255, 255))
+    ecran.blit(texte, (10, 10))
+
+
 def jeu_snake():
     # Initialisation de la position et de la direction du serpent
     serpent_x = largeur_ecran // 2
@@ -180,6 +187,7 @@ def jeu_snake():
         for segment in serpent_corps:
             pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
 
+        afficher_score(serpent_longueur-1)
         # Mise à jour de l'écran
         pygame.display.update()
 
@@ -188,7 +196,7 @@ def jeu_snake():
 
         # Limite de vitesse du serpent
         clock.tick(serpent_vitesse)
-
+    
     # Fermeture de la fenêtre Pygame
     pygame.quit()
 
