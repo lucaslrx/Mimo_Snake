@@ -189,7 +189,8 @@ def jeu_snake():
             pomelos_y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
             serpent_longueur += 1
             son_pomelos.play()
-            enregistrer_highscore(serpent_longueur-1) 
+            if((serpent_longueur - 1) > high_score):
+                enregistrer_highscore(serpent_longueur-1)
 
 
         # Mise à jour du corps du serpent
