@@ -36,10 +36,11 @@ couleur_snake = (0, 255, 0)
 image_fond = pygame.image.load("background.png")
 image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
 
-#son
+# son
 son_pomelos = pygame.mixer.Sound("pomelos.wav")
 son_autruche = pygame.mixer.Sound("autruche.wav")
 son_boule_de_feu = pygame.mixer.Sound("boule_de_feu.wav")
+
 
 # Classe pour la boule de feu
 class BouleFeu:
@@ -57,6 +58,7 @@ class BouleFeu:
 
     def afficher(self):
         ecran.blit(image_fireball, (self.x, self.y))
+
 
 # Classe pour l'autruche
 class Autruche:
@@ -86,14 +88,17 @@ class Autruche:
             self.boule_feu = BouleFeu(self.x, self.y + taille_cellule, direction)
             son_autruche.play()
 
+
 # Fonction principale du jeu
 def afficher_score(longueur):
     texte = police.render("Pomelos: " + str(longueur), True, (255, 255, 255))
     ecran.blit(texte, (10, 10))
 
+
 def enregistrer_highscore(score):
     with open("highscore.txt", "w") as fichier:
         fichier.write(str(score))
+
 
 def charger_highscore():
     with open("highscore.txt", "r") as fichier:
@@ -104,6 +109,19 @@ def charger_highscore():
             return 0
 
 
+def afficher_menu_pause():
+    ecran.fill((0, 0, 0))
+    texte_pause = police.render("Pause", True, (255, 255, 255))
+    texte_reprendre = police.render("Reprendre", True, (255, 255, 255))
+    texte_quitter = police.render("Quitter", True, (255, 255, 255))
+
+    ecran.blit(texte_pause,
+               (largeur_ecran // 2 - texte_pause.get_width() // 2, hauteur_ecran // 2 - texte_pause.get_height() // 2))
+    ecran.blit(texte_reprendre, (largeur_ecran // 2 - texte_reprendre.get_width() // 2, hauteur_ecran // 2 + 20))
+    ecran.blit(texte_quitter, (largeur_ecran // 2 - texte_quitter.get_width() // 2, hauteur_ecran // 2 + 60))
+    pygame.display.update()
+
+
 def jeu_snake():
     # Initialisation de la position et de la direction du serpent
     serpent_x = largeur_ecran // 2
@@ -111,7 +129,7 @@ def jeu_snake():
     direction_x = 0
     direction_y = 0
 
-    #initialisation du high score
+    # initialisation du high score
     high_score = charger_highscore()
 
     # Initialisation de la position de la pomelos
@@ -124,10 +142,12 @@ def jeu_snake():
     serpent_vitesse = 15
 
     # Initialisation de l'autruche
-    autruche = Autruche(random.randint(0, largeur_ecran - taille_cellule), random.randint(0, hauteur_ecran - taille_cellule * 2))
+    autruche = Autruche(random.randint(0, largeur_ecran - taille_cellule),
+                        random.randint(0, hauteur_ecran - taille_cellule * 2))
 
     # Variables de contrôle du jeu
     jeu_termine = False
+    jeu_en_pause = False
     clock = pygame.time.Clock()
 
     # Boucle principale du jeu
@@ -148,6 +168,16 @@ def jeu_snake():
                 elif event.key == pygame.K_DOWN:
                     direction_x = 0
                     direction_y = taille_cellule
+                elif event.key == pygame.K_ESCAPE:
+                    jeu_en_pause = not jeu_en_pause
+                    if jeu_en_pause:
+                        pygame.mixer.pause()
+                    else:
+                        pygame.mixer.unpause()
+
+        if jeu_en_pause:
+            afficher_menu_pause()
+            continue
 
         # Mise à jour de la position du serpent
         serpent_x += direction_x
@@ -171,15 +201,18 @@ def jeu_snake():
         if autruche.boule_feu is not None:
             autruche.boule_feu.deplacer()
             autruche.boule_feu.afficher()
-           # if int(serpent_x) == int(autruche.boule_feu.x) and int(serpent_y) == int(autruche.boule_feu.y)
-            if int(serpent_x) > int(autruche.boule_feu.x + -15) and int(serpent_x) < int(autruche.boule_feu.x + 15) and int(serpent_y) > int(autruche.boule_feu.y - 15) and int(serpent_y) < int(autruche.boule_feu.y + 15):
+            # if int(serpent_x) == int(autruche.boule_feu.x) and int(serpent_y) == int(autruche.boule_feu.y)
+            if int(serpent_x) > int(autruche.boule_feu.x + -15) and int(serpent_x) < int(
+                    autruche.boule_feu.x + 15) and int(serpent_y) > int(autruche.boule_feu.y - 15) and int(
+                    serpent_y) < int(autruche.boule_feu.y + 15):
                 son_boule_de_feu.play()
                 jeu_termine = True
             if autruche.boule_feu.x < 0 or autruche.boule_feu.x >= largeur_ecran:
                 autruche.boule_feu = None
-        
-        # Vérification de la collision entre la boule de feu et le serpent
-            if int(serpent_x) > int(autruche.x + -15) and int(serpent_x) < int(autruche.x + 15) and int(serpent_y) > int(autruche.y - 15) and int(serpent_y) < int(autruche.y + 15):
+
+            # Vérification de la collision entre la boule de feu et le serpent
+            if int(serpent_x) > int(autruche.x + -15) and int(serpent_x) < int(autruche.x + 15) and int(
+                    serpent_y) > int(autruche.y - 15) and int(serpent_y) < int(autruche.y + 15):
                 son_autruche.play()
                 jeu_termine = True
 
@@ -189,10 +222,9 @@ def jeu_snake():
             pomelos_y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
             serpent_longueur += 1
             son_pomelos.play()
-            enregistrer_highscore(serpent_longueur-1) 
+            enregistrer_highscore(serpent_longueur - 1)
 
-
-        # Mise à jour du corps du serpent
+            # Mise à jour du corps du serpent
         serpent_tete = []
         serpent_tete.append(serpent_x)
         serpent_tete.append(serpent_y)
@@ -208,16 +240,15 @@ def jeu_snake():
         # Dessin du serpent
         for segment in serpent_corps:
             pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
-        
-        #affichage du high score
+
+        # affichage du high score
         texte_highscore = police.render("High Score: " + str(high_score), True, (255, 255, 255))
         rect_highscore = texte_highscore.get_rect()
         rect_highscore.topright = (largeur_ecran - 10, 10)
         ecran.blit(texte_highscore, rect_highscore)
 
-
-        #affichage du score
-        afficher_score(serpent_longueur-1)
+        # affichage du score
+        afficher_score(serpent_longueur - 1)
 
         # Mise à jour de l'écran
         pygame.display.update()
@@ -227,9 +258,10 @@ def jeu_snake():
 
         # Limite de vitesse du serpent
         clock.tick(serpent_vitesse)
-    
+
     # Fermeture de la fenêtre Pygame
     pygame.quit()
+
 
 # Lancement du jeu
 jeu_snake()
