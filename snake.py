@@ -19,6 +19,10 @@ pygame.display.set_caption("Snake Game")
 image_pomelos = pygame.image.load("pomelos1.png")
 taille_cellule = 20
 image_pomelos = pygame.transform.scale(image_pomelos, ((int(taille_cellule * 1.3)), (int(taille_cellule * 1.3))))
+image_tete = pygame.image.load("serpent_tete.png")
+image_tete = pygame.transform.scale(image_tete, (taille_cellule*1.5, taille_cellule*1.5))
+
+
 
 # Chargement de l'image de la boule de feu
 image_fireball = pygame.image.load("fireball.png")
@@ -146,6 +150,7 @@ def jeu_snake():
     serpent_y = hauteur_ecran // 2
     direction_x = 0
     direction_y = 0
+    global image_tete
 
 
     # initialisation du high score
@@ -261,9 +266,21 @@ def jeu_snake():
                 jeu_termine = True
 
         # Dessin du serpent
-        for segment in serpent_corps:
-            pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
-        
+        for index, segment in enumerate(serpent_corps):
+            if index == len(serpent_corps) - 1:  # Si le segment est la tête
+                if direction_y == -taille_cellule:  # Aller vers le haut
+                    image_tete_rotated = pygame.transform.rotate(image_tete, 180)
+                elif direction_y == taille_cellule:  # Aller vers le bas
+                    image_tete_rotated = pygame.transform.rotate(image_tete, 0)
+                elif direction_x == -taille_cellule:  # Aller vers la gauche
+                    image_tete_rotated = pygame.transform.rotate(image_tete, 270)
+                else:  # Aller vers la droite
+                    image_tete_rotated = pygame.transform.rotate(image_tete, 90)
+
+                ecran.blit(image_tete_rotated, (segment[0] - taille_cellule * 0.25, segment[1] - taille_cellule * 0.25))
+            else:  # Sinon c'est le corps
+                pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
+
         #affichage du high score
         texte_highscore = police.render("High Score: " + str(high_score), True, (255, 255, 255))
         rect_highscore = texte_highscore.get_rect()
