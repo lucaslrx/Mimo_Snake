@@ -65,11 +65,17 @@ class Autruche:
         self.y = y
         self.vitesse = 5
         self.boule_feu = None
+        self.direction_x = 1
+        self.direction_y = 1
 
     def deplacer(self):
-        self.y += self.vitesse
+        self.y += self.vitesse * self.direction_y
         if self.y <= 0 or self.y >= hauteur_ecran - taille_cellule * 2:
-            self.vitesse *= -1
+            self.direction_y *= -1
+
+        self.x += self.vitesse * self.direction_x  # Ajouter la logique de déplacement en X
+        if self.x <= 0 or self.x >= largeur_ecran - taille_cellule:
+            self.direction_x *= -1
 
     def afficher(self):
         ecran.blit(image_autruche, (self.x, self.y))
@@ -174,6 +180,7 @@ def jeu_snake():
         
         # Vérification de la collision entre la boule de feu et le serpent
             if int(serpent_x) > int(autruche.x + -15) and int(serpent_x) < int(autruche.x + 15) and int(serpent_y) > int(autruche.y - 15) and int(serpent_y) < int(autruche.y + 15):
+                son_autruche.play()
                 jeu_termine = True
 
         # Vérification de la collision avec la pomelos
