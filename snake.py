@@ -36,7 +36,7 @@ image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
 
 #son
 son_pomelos = pygame.mixer.Sound("pomelos.wav")
-#son_autruche = pygame.mixer.Sound("autruche.wav")
+son_autruche = pygame.mixer.Sound("autruche.wav")
 son_boule_de_feu = pygame.mixer.Sound("boule_de_feu.wav")
 
 # Classe pour la boule de feu
@@ -76,6 +76,7 @@ class Autruche:
         if self.boule_feu is None:
             direction = random.choice(["gauche", "droite"])
             self.boule_feu = BouleFeu(self.x, self.y + taille_cellule, direction)
+            son_autruche.play()
 
 # Fonction principale du jeu
 def jeu_snake():
