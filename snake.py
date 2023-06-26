@@ -9,16 +9,15 @@ pygame.mixer.init()
 largeur_ecran = 640
 hauteur_ecran = 480
 
-police = pygame.font.Font("arial.ttf", 24)
+police = pygame.font.Font("Arial.ttf", 24)
 
 # Création de la fenêtre de jeu
 ecran = pygame.display.set_mode((largeur_ecran, hauteur_ecran))
 pygame.display.set_caption("Snake Game")
 
-# Chargement de l'image du pomelos
-image_pomelos = pygame.image.load("pomelos1.png")
+# Chargement de l'image de la pomelos
 taille_cellule = 20
-image_pomelos = pygame.transform.scale(image_pomelos, ((int(taille_cellule * 1.3)), (int(taille_cellule * 1.3))))
+
 image_tete = pygame.image.load("serpent_tete.png")
 image_tete = pygame.transform.scale(image_tete, (taille_cellule*1.5, taille_cellule*1.5))
 
@@ -44,6 +43,24 @@ image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
 son_pomelos = pygame.mixer.Sound("pomelos.wav")
 son_autruche = pygame.mixer.Sound("autruche.wav")
 son_boule_de_feu = pygame.mixer.Sound("boule_de_feu.wav")
+
+
+class Fruit:
+    def __init__(self, image_path, sound_path):
+        self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
+        self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
+        self.image = pygame.image.load(image_path)
+        self.image = pygame.transform.scale(self.image, ((int(taille_cellule * 1.3)), (int(taille_cellule * 1.3))))
+        self.sound = pygame.mixer.Sound(sound_path)
+
+    def afficher(self):
+        ecran.blit(self.image, (self.x, self.y))
+
+    def manger(self):
+        self.sound.play()
+        self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
+        self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
+
 
 
 # Classe pour la boule de feu
@@ -130,7 +147,7 @@ def charger_highscore():
         else:
             return 0
 
-
+pomelos = Fruit("pomelos1.png", "pomelos.wav")
 def afficher_menu_pause():
     ecran.fill((0, 0, 0))
     texte_pause = police.render("Pause", True, (255, 255, 255))
@@ -216,7 +233,7 @@ def jeu_snake():
         ecran.blit(image_fond, (0, 0))
 
         # Affichage de la pomelos
-        ecran.blit(image_pomelos, (pomelos_x, pomelos_y))
+        pomelos.afficher()
 
         # Déplacement et affichage de l'autruche
         autruche.deplacer()
@@ -242,11 +259,9 @@ def jeu_snake():
                 jeu_termine = True
 
         # Vérification de la collision avec la pomelos
-        if serpent_x == pomelos_x and serpent_y == pomelos_y:
-            pomelos_x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
-            pomelos_y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
+        if serpent_x == pomelos.x and serpent_y == pomelos.y:
+            pomelos.manger()
             serpent_longueur += 1
-            son_pomelos.play()
 
             if((serpent_longueur - 1) > high_score):
                 enregistrer_highscore(serpent_longueur-1)
