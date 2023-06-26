@@ -18,17 +18,17 @@ pygame.display.set_caption("Snake Game")
 # Chargement de l'image de la pomelos
 taille_cellule = 20
 
-image_tete = pygame.image.load("serpent_tete.png")
+image_tete = pygame.image.load("pic/serpent_tete.png")
 image_tete = pygame.transform.scale(image_tete, (taille_cellule*1.5, taille_cellule*1.5))
 
 
 
 # Chargement de l'image de la boule de feu
-image_fireball = pygame.image.load("fireball.png")
+image_fireball = pygame.image.load("pic/fireball.png")
 image_fireball = pygame.transform.scale(image_fireball, ((int(taille_cellule * 1.1)), (int(taille_cellule * 1.3))))
 
 # Chargement de l'image de l'autruche
-image_autruche = pygame.image.load("autruche.png")
+image_autruche = pygame.image.load("pic/autruche.png")
 image_autruche = pygame.transform.scale(image_autruche, (taille_cellule, taille_cellule * 2))
 
 # Définition des couleurs
@@ -36,7 +36,7 @@ couleur_fond = (0, 0, 0)
 couleur_snake = (0, 255, 0)
 
 # Chargement de l'image de fond d'écran
-image_fond = pygame.image.load("background.png")
+image_fond = pygame.image.load("pic/background.png")
 image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
 
 # son
@@ -147,7 +147,7 @@ def charger_highscore():
         else:
             return 0
 
-pomelos = Fruit("pomelos1.png", "pomelos.wav")
+pomelos = Fruit("pic/pomelos1.png", "pomelos.wav")
 def afficher_menu_pause():
     ecran.fill((0, 0, 0))
     texte_pause = police.render("Pause", True, (255, 255, 255))
