@@ -3,6 +3,7 @@ import random
 
 # Initialisation de Pygame
 pygame.init()
+pygame.mixer.init()
 
 # Définition des dimensions de l'écran
 largeur_ecran = 640
@@ -33,6 +34,10 @@ couleur_snake = (0, 255, 0)
 image_fond = pygame.image.load("background.png")
 image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
 
+#son
+son_pomelos = pygame.mixer.Sound("pomelos.wav")
+#son_autruche = pygame.mixer.Sound("autruche.wav")
+son_boule_de_feu = pygame.mixer.Sound("boule_de_feu.wav")
 
 # Classe pour la boule de feu
 class BouleFeu:
@@ -139,6 +144,7 @@ def jeu_snake():
             autruche.boule_feu.afficher()
            # if int(serpent_x) == int(autruche.boule_feu.x) and int(serpent_y) == int(autruche.boule_feu.y)
             if int(serpent_x) > int(autruche.boule_feu.x + -15) and int(serpent_x) < int(autruche.boule_feu.x + 15) and int(serpent_y) > int(autruche.boule_feu.y - 15) and int(serpent_y) < int(autruche.boule_feu.y + 15):
+                son_boule_de_feu.play()
                 jeu_termine = True
             if autruche.boule_feu.x < 0 or autruche.boule_feu.x >= largeur_ecran:
                 autruche.boule_feu = None
@@ -152,6 +158,8 @@ def jeu_snake():
             pomelos_x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
             pomelos_y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
             serpent_longueur += 1
+            son_pomelos.play()
+
 
         # Mise à jour du corps du serpent
         serpent_tete = []
