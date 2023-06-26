@@ -70,6 +70,13 @@ class BouleFeu:
         self.y = y
         self.direction = direction
         self.vitesse = 3
+        self.images = [pygame.transform.scale(pygame.image.load('pic/fireball.png'),
+                                              (int(taille_cellule * 1.1), int(taille_cellule * 1.3))),
+                       pygame.transform.scale(pygame.image.load('pic/fireball2.png'),
+                                              (int(taille_cellule * 1.1), int(taille_cellule * 1.3))),
+                       pygame.transform.scale(pygame.image.load('pic/fireball3.png'),
+                                              (int(taille_cellule * 1.1), int(taille_cellule * 1.3)))]
+        self.current_image = 0
 
     def deplacer(self):
         if self.direction == "gauche":
@@ -78,7 +85,9 @@ class BouleFeu:
             self.x += self.vitesse
 
     def afficher(self):
-        ecran.blit(image_fireball, (self.x, self.y))
+        ecran.blit(self.images[self.current_image], (self.x, self.y))
+        self.current_image = (self.current_image + 1) % len(self.images)
+
 
 
 # Classe pour l'autruche
