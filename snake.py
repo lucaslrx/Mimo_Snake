@@ -19,9 +19,7 @@ pygame.display.set_caption("Snake Game")
 taille_cellule = 20
 
 image_tete = pygame.image.load("pic/serpent_tete.png")
-image_tete = pygame.transform.scale(image_tete, (taille_cellule*1.5, taille_cellule*1.5))
-
-
+image_tete = pygame.transform.scale(image_tete, (taille_cellule * 1.5, taille_cellule * 1.5))
 
 # Chargement de l'image de la boule de feu
 image_fireball = pygame.image.load("pic/fireball.png")
@@ -60,7 +58,6 @@ class Fruit:
         self.sound.play()
         self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
         self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
-
 
 
 # Classe pour la boule de feu
@@ -121,18 +118,6 @@ def afficher_score(longueur):
     texte = police.render("Pomelos: " + str(longueur), True, (255, 255, 255))
     ecran.blit(texte, (10, 10))
 
-def enregistrer_highscore(score):
-    with open("highscore.txt", "w") as fichier:
-        fichier.write(str(score))
-
-def charger_highscore():
-    with open("highscore.txt", "r") as fichier:
-        contenu = fichier.read()
-        if contenu:
-            return int(contenu)
-        else:
-            return 0
-
 
 def enregistrer_highscore(score):
     with open("highscore.txt", "w") as fichier:
@@ -146,8 +131,11 @@ def charger_highscore():
             return int(contenu)
         else:
             return 0
+
 
 pomelos = Fruit("pic/pomelos1.png", "sound/pomelos.wav")
+
+
 def afficher_menu_pause():
     ecran.fill((0, 0, 0))
     texte_pause = police.render("Pause", True, (255, 255, 255))
@@ -169,14 +157,9 @@ def jeu_snake():
     direction_y = 0
     global image_tete
 
-
     # initialisation du high score
 
     high_score = charger_highscore()
-
-    # Initialisation de la position de la pomelos
-    pomelos_x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
-    pomelos_y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
 
     # Initialisation de la longueur du serpent
     serpent_longueur = 1
@@ -244,7 +227,7 @@ def jeu_snake():
             autruche.boule_feu.deplacer()
             autruche.boule_feu.afficher()
             # if int(serpent_x) == int(autruche.boule_feu.x) and int(serpent_y) == int(autruche.boule_feu.y)
-            if int(serpent_x) > int(autruche.boule_feu.x + -15) and int(serpent_x) < int(
+            if int(autruche.boule_feu.x + -15) < int(serpent_x) < int(
                     autruche.boule_feu.x + 15) and int(serpent_y) > int(autruche.boule_feu.y - 15) and int(
                     serpent_y) < int(autruche.boule_feu.y + 15):
                 son_boule_de_feu.play()
@@ -253,7 +236,7 @@ def jeu_snake():
                 autruche.boule_feu = None
 
             # Vérification de la collision entre la boule de feu et le serpent
-            if int(serpent_x) > int(autruche.x + -15) and int(serpent_x) < int(autruche.x + 15) and int(
+            if int(autruche.x + -15) < int(serpent_x) < int(autruche.x + 15) and int(
                     serpent_y) > int(autruche.y - 15) and int(serpent_y) < int(autruche.y + 15):
                 son_autruche.play()
                 jeu_termine = True
@@ -263,14 +246,11 @@ def jeu_snake():
             pomelos.manger()
             serpent_longueur += 1
 
-            if((serpent_longueur - 1) > high_score):
-                enregistrer_highscore(serpent_longueur-1)
+            if (serpent_longueur - 1) > high_score:
+                enregistrer_highscore(serpent_longueur - 1)
 
-
-            # Mise à jour du corps du serpent
-        serpent_tete = []
-        serpent_tete.append(serpent_x)
-        serpent_tete.append(serpent_y)
+        # Mise à jour du corps du serpent
+        serpent_tete = [serpent_x, serpent_y]
         serpent_corps.append(serpent_tete)
         if len(serpent_corps) > serpent_longueur:
             del serpent_corps[0]
@@ -296,13 +276,11 @@ def jeu_snake():
             else:  # Sinon c'est le corps
                 pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
 
-        #affichage du high score
+        # affichage du high score
         texte_highscore = police.render("High Score: " + str(high_score), True, (255, 255, 255))
         rect_highscore = texte_highscore.get_rect()
         rect_highscore.topright = (largeur_ecran - 10, 10)
         ecran.blit(texte_highscore, rect_highscore)
-
-
 
         # affichage du high score
         texte_highscore = police.render("High Score: " + str(high_score), True, (255, 255, 255))
