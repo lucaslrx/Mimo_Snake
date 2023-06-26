@@ -9,7 +9,7 @@ pygame.mixer.init()
 largeur_ecran = 640
 hauteur_ecran = 480
 
-police = pygame.font.Font("Arial.ttf", 24)
+police = pygame.font.Font("tools/Arial.ttf", 24)
 
 # Création de la fenêtre de jeu
 ecran = pygame.display.set_mode((largeur_ecran, hauteur_ecran))
@@ -40,9 +40,9 @@ image_fond = pygame.image.load("pic/background.png")
 image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
 
 # son
-son_pomelos = pygame.mixer.Sound("pomelos.wav")
-son_autruche = pygame.mixer.Sound("autruche.wav")
-son_boule_de_feu = pygame.mixer.Sound("boule_de_feu.wav")
+son_pomelos = pygame.mixer.Sound("sound/pomelos.wav")
+son_autruche = pygame.mixer.Sound("sound/autruche.wav")
+son_boule_de_feu = pygame.mixer.Sound("sound/boule_de_feu.wav")
 
 
 class Fruit:
@@ -147,7 +147,7 @@ def charger_highscore():
         else:
             return 0
 
-pomelos = Fruit("pic/pomelos1.png", "pomelos.wav")
+pomelos = Fruit("pic/pomelos1.png", "sound/pomelos.wav")
 def afficher_menu_pause():
     ecran.fill((0, 0, 0))
     texte_pause = police.render("Pause", True, (255, 255, 255))
