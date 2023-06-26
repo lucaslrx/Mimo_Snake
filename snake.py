@@ -41,6 +41,8 @@ image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
 son_pomelos = pygame.mixer.Sound("sound/pomelos.wav")
 son_autruche = pygame.mixer.Sound("sound/autruche.wav")
 son_boule_de_feu = pygame.mixer.Sound("sound/boule_de_feu.wav")
+son_perdu = pygame.mixer.Sound("sound/perdu.wav")
+jeu_termine = False
 
 
 class Fruit:
@@ -148,6 +150,30 @@ def afficher_menu_pause():
     ecran.blit(texte_quitter, (largeur_ecran // 2 - texte_quitter.get_width() // 2, hauteur_ecran // 2 + 60))
     pygame.display.update()
 
+def check_collision(obj1_x, obj1_y, obj1_size, obj2_x, obj2_y, obj2_size):
+    if (obj2_x - obj1_size) < obj1_x < (obj2_x + obj2_size) and (obj2_y - obj1_size) < obj1_y < (obj2_y + obj2_size):
+        return True
+    return False
+
+def perdu(serpent_corps):
+    global jeu_termine
+
+    # Mise à jour du jeu pour indiquer qu'il est terminé
+    jeu_termine = True
+
+    # Jouer le son de la défaite
+    son_perdu.play()
+
+    # Faire disparaître le serpent
+    for _ in range(10):
+        for segment in serpent_corps:
+            pygame.draw.rect(ecran, couleur_fond, [segment[0], segment[1], taille_cellule, taille_cellule])
+        pygame.display.update()
+        pygame.time.wait(100)
+        for segment in serpent_corps:
+            pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
+        pygame.display.update()
+        pygame.time.wait(100)
 
 def jeu_snake():
     # Initialisation de la position et de la direction du serpent
@@ -156,6 +182,7 @@ def jeu_snake():
     direction_x = 0
     direction_y = 0
     global image_tete
+    global jeu_termine
 
     # initialisation du high score
 
@@ -210,7 +237,7 @@ def jeu_snake():
 
         # Vérification des collisions avec les bords de l'écran
         if serpent_x >= largeur_ecran or serpent_x < 0 or serpent_y >= hauteur_ecran or serpent_y < 0:
-            jeu_termine = True
+            perdu(serpent_corps)
 
         # Affichage de l'image de fond
         ecran.blit(image_fond, (0, 0))
@@ -227,22 +254,20 @@ def jeu_snake():
             autruche.boule_feu.deplacer()
             autruche.boule_feu.afficher()
             # if int(serpent_x) == int(autruche.boule_feu.x) and int(serpent_y) == int(autruche.boule_feu.y)
-            if int(autruche.boule_feu.x + -15) < int(serpent_x) < int(
-                    autruche.boule_feu.x + 15) and int(serpent_y) > int(autruche.boule_feu.y - 15) and int(
-                    serpent_y) < int(autruche.boule_feu.y + 15):
+            if check_collision(serpent_x, serpent_y, taille_cellule, autruche.boule_feu.x, autruche.boule_feu.y,
+                               taille_cellule):
                 son_boule_de_feu.play()
-                jeu_termine = True
+                perdu(serpent_corps)
             if autruche.boule_feu.x < 0 or autruche.boule_feu.x >= largeur_ecran:
                 autruche.boule_feu = None
 
-            # Vérification de la collision entre la boule de feu et le serpent
-            if int(autruche.x + -15) < int(serpent_x) < int(autruche.x + 15) and int(
-                    serpent_y) > int(autruche.y - 15) and int(serpent_y) < int(autruche.y + 15):
-                son_autruche.play()
-                jeu_termine = True
+        # Vérification de la collision entre l'autruche et le serpent
+        if check_collision(serpent_x, serpent_y, taille_cellule, autruche.x, autruche.y, taille_cellule):
+            son_autruche.play()
+            perdu(serpent_corps)
 
-        # Vérification de la collision avec la pomelos
-        if serpent_x == pomelos.x and serpent_y == pomelos.y:
+        # Vérification de la collision avec le pomelos
+        if check_collision(serpent_x, serpent_y, taille_cellule, pomelos.x, pomelos.y, taille_cellule):
             pomelos.manger()
             serpent_longueur += 1
 
@@ -258,7 +283,7 @@ def jeu_snake():
         # Vérification des collisions avec le corps du serpent
         for segment in serpent_corps[:-1]:
             if segment == serpent_tete:
-                jeu_termine = True
+                perdu(serpent_corps)
 
         # Dessin du serpent
         for index, segment in enumerate(serpent_corps):
