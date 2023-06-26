@@ -62,6 +62,7 @@ class Fruit:
         self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
 
 
+
 # Classe pour la boule de feu
 class BouleFeu:
     def __init__(self, x, y, direction):
