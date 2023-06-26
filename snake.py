@@ -67,15 +67,21 @@ class Autruche:
         self.boule_feu = None
         self.direction_x = 1
         self.direction_y = 1
+        self.changement_direction_probabilite = 0.05
 
     def deplacer(self):
         self.y += self.vitesse * self.direction_y
         if self.y <= 0 or self.y >= hauteur_ecran - taille_cellule * 2:
             self.direction_y *= -1
 
-        self.x += self.vitesse * self.direction_x  # Ajouter la logique de déplacement en X
+        self.x += self.vitesse * self.direction_x
         if self.x <= 0 or self.x >= largeur_ecran - taille_cellule:
             self.direction_x *= -1
+
+        # Ajouter une composante aléatoire aux déplacements avec une probabilité plus faible
+        if random.random() < self.changement_direction_probabilite:
+            self.direction_x = random.choice([-1, 1])
+            self.direction_y = random.choice([-1, 1])
 
     def afficher(self):
         ecran.blit(image_autruche, (self.x, self.y))
