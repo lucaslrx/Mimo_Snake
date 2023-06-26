@@ -209,16 +209,16 @@ def jeu_snake():
             if event.type == pygame.QUIT:
                 jeu_termine = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
+                if event.key == pygame.K_LEFT and direction_x != taille_cellule:  # prevent going right when moving left
                     direction_x = -taille_cellule
                     direction_y = 0
-                elif event.key == pygame.K_RIGHT:
+                elif event.key == pygame.K_RIGHT and direction_x != -taille_cellule:  # prevent going left when moving right
                     direction_x = taille_cellule
                     direction_y = 0
-                elif event.key == pygame.K_UP:
+                elif event.key == pygame.K_UP and direction_y != taille_cellule:  # prevent going down when moving up
                     direction_x = 0
                     direction_y = -taille_cellule
-                elif event.key == pygame.K_DOWN:
+                elif event.key == pygame.K_DOWN and direction_y != -taille_cellule:  # prevent going up when moving down
                     direction_x = 0
                     direction_y = taille_cellule
                 elif event.key == pygame.K_ESCAPE:
