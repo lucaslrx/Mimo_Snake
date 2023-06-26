@@ -152,6 +152,7 @@ def jeu_snake():
         
         # Vérification de la collision entre la boule de feu et le serpent
             if int(serpent_x) > int(autruche.x + -15) and int(serpent_x) < int(autruche.x + 15) and int(serpent_y) > int(autruche.y - 15) and int(serpent_y) < int(autruche.y + 15):
+                son_autruche.play()
                 jeu_termine = True
 
         # Vérification de la collision avec la pomelos
