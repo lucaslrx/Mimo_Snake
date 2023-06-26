@@ -12,14 +12,14 @@ hauteur_ecran = 480
 ecran = pygame.display.set_mode((largeur_ecran, hauteur_ecran))
 pygame.display.set_caption("Snake Game")
 
-# Chargement de l'image de la pomelos
+# Chargement de l'image du pomelos
 image_pomelos = pygame.image.load("pomelos1.png")
 taille_cellule = 20
 image_pomelos = pygame.transform.scale(image_pomelos, ((int(taille_cellule * 1.3)), (int(taille_cellule * 1.3))))
 
 # Chargement de l'image de la boule de feu
 image_fireball = pygame.image.load("fireball.png")
-image_fireball = pygame.transform.scale(image_fireball, ((int(taille_cellule * 1.3)), (int(taille_cellule * 1.3))))
+image_fireball = pygame.transform.scale(image_fireball, ((int(taille_cellule * 1.1)), (int(taille_cellule * 1.3))))
 
 # Chargement de l'image de l'autruche
 image_autruche = pygame.image.load("autruche.png")
@@ -29,13 +29,18 @@ image_autruche = pygame.transform.scale(image_autruche, (taille_cellule, taille_
 couleur_fond = (0, 0, 0)
 couleur_snake = (0, 255, 0)
 
+# Chargement de l'image de fond d'écran
+image_fond = pygame.image.load("background.png")
+image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
+
+
 # Classe pour la boule de feu
 class BouleFeu:
     def __init__(self, x, y, direction):
         self.x = x
         self.y = y
         self.direction = direction
-        self.vitesse = 5
+        self.vitesse = 3
 
     def deplacer(self):
         if self.direction == "gauche":
@@ -118,8 +123,8 @@ def jeu_snake():
         if serpent_x >= largeur_ecran or serpent_x < 0 or serpent_y >= hauteur_ecran or serpent_y < 0:
             jeu_termine = True
 
-        # Dessin de l'arrière-plan
-        ecran.fill(couleur_fond)
+        # Affichage de l'image de fond
+        ecran.blit(image_fond, (0, 0))
 
         # Affichage de la pomelos
         ecran.blit(image_pomelos, (pomelos_x, pomelos_y))
@@ -132,10 +137,15 @@ def jeu_snake():
         if autruche.boule_feu is not None:
             autruche.boule_feu.deplacer()
             autruche.boule_feu.afficher()
-            if serpent_x == autruche.boule_feu.x and serpent_y == autruche.boule_feu.y:
+           # if int(serpent_x) == int(autruche.boule_feu.x) and int(serpent_y) == int(autruche.boule_feu.y)
+            if int(serpent_x) > int(autruche.boule_feu.x + -15) and int(serpent_x) < int(autruche.boule_feu.x + 15) and int(serpent_y) > int(autruche.boule_feu.y - 15) and int(serpent_y) < int(autruche.boule_feu.y + 15):
                 jeu_termine = True
             if autruche.boule_feu.x < 0 or autruche.boule_feu.x >= largeur_ecran:
                 autruche.boule_feu = None
+        
+        # Vérification de la collision entre la boule de feu et le serpent
+            if int(serpent_x) > int(autruche.x + -15) and int(serpent_x) < int(autruche.x + 15) and int(serpent_y) > int(autruche.y - 15) and int(serpent_y) < int(autruche.y + 15):
+                jeu_termine = True
 
         # Vérification de la collision avec la pomelos
         if serpent_x == pomelos_x and serpent_y == pomelos_y:
