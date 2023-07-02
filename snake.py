@@ -28,6 +28,7 @@ image_fireball = pygame.transform.scale(image_fireball, ((int(taille_cellule * 1
 # Chargement de l'image de l'autruche
 image_autruche = pygame.image.load("pic/autruche.png")
 image_autruche = pygame.transform.scale(image_autruche, (taille_cellule, taille_cellule * 2))
+image_autruche_gauche = pygame.transform.flip(image_autruche, True, False)
 
 # Définition des couleurs
 couleur_fond = (0, 0, 0)
@@ -107,6 +108,7 @@ class Autruche:
         self.direction_x = 1
         self.direction_y = 1
         self.changement_direction_probabilite = 0.05
+        self.image = image_autruche
 
     def deplacer(self):
         self.y += self.vitesse * self.direction_y
@@ -122,8 +124,14 @@ class Autruche:
             self.direction_x = random.choice([-1, 1])
             self.direction_y = random.choice([-1, 1])
 
+        # changer l'image de l'autruche selon la direction
+        if self.direction_x > 0:
+            self.image = image_autruche_gauche
+        else:
+            self.image = image_autruche
+
     def afficher(self):
-        ecran.blit(image_autruche, (self.x, self.y))
+        ecran.blit(self.image, (self.x, self.y))
 
     def lancer_boule_feu(self):
         if self.boule_feu is None:
