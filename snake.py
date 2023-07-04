@@ -9,45 +9,18 @@ pygame.mixer.init()
 largeur_ecran = 640
 hauteur_ecran = 480
 
-police = pygame.font.Font("tools/Arial.ttf", 24)
-
 # Création de la fenêtre de jeu
 ecran = pygame.display.set_mode((largeur_ecran, hauteur_ecran))
 pygame.display.set_caption("Snake Game")
 
-# Chargement de l'image de la pomelos
-taille_cellule = 20
-
-image_tete = pygame.image.load("pic/serpent_tete.png")
-image_tete = pygame.transform.scale(image_tete, (taille_cellule * 1.5, taille_cellule * 1.5))
-
-# Chargement de l'image de la boule de feu
-image_fireball = pygame.image.load("pic/fireball.png")
-image_fireball = pygame.transform.scale(image_fireball, ((int(taille_cellule * 1.1)), (int(taille_cellule * 1.3))))
-
-# Chargement de l'image de l'autruche
-image_autruche = pygame.image.load("pic/autruche.png")
-image_autruche = pygame.transform.scale(image_autruche, (taille_cellule, taille_cellule * 2))
-image_autruche_gauche = pygame.transform.flip(image_autruche, True, False)
-
-# Définition des couleurs
-couleur_fond = (0, 0, 0)
-couleur_snake = (0, 255, 0)
-
-# Chargement de l'image de fond d'écran
-image_fond = pygame.image.load("pic/background.png")
-image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
-
-# son
-son_pomelos = pygame.mixer.Sound("sound/pomelos.wav")
-son_autruche = pygame.mixer.Sound("sound/autruche.wav")
-son_boule_de_feu = pygame.mixer.Sound("sound/boule_de_feu.wav")
-son_perdu = pygame.mixer.Sound("sound/perdu.wav")
 jeu_termine = False
 
 
 class Fruit:
+
     def __init__(self, image_path, sound_path):
+        global ressources
+        taille_cellule = ressources['taille_cellule']
         self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
         self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
         self.image = pygame.image.load(image_path)
@@ -58,6 +31,8 @@ class Fruit:
         ecran.blit(self.image, (self.x, self.y))
 
     def manger(self):
+        global ressources
+        taille_cellule = ressources['taille_cellule']
         self.sound.play()
         self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
         self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
@@ -67,6 +42,8 @@ class Fruit:
 # Classe pour la boule de feu
 class BouleFeu:
     def __init__(self, x, y, direction):
+        global ressources
+        taille_cellule = ressources['taille_cellule']
         self.x = x
         self.y = y
         self.direction = direction
@@ -101,6 +78,8 @@ class BouleFeu:
 # Classe pour l'autruche
 class Autruche:
     def __init__(self, x, y):
+        global ressources
+        image_autruche = ressources['image_autruche']
         self.x = x
         self.y = y
         self.vitesse = 5
@@ -111,6 +90,10 @@ class Autruche:
         self.image = image_autruche
 
     def deplacer(self):
+        global ressources
+        taille_cellule = ressources['taille_cellule']
+        image_autruche = ressources['image_autruche']
+        image_autruche_gauche = ressources['image_autruche_gauche']
         self.y += self.vitesse * self.direction_y
         if self.y <= 0 or self.y >= hauteur_ecran - taille_cellule * 2:
             self.direction_y *= -1
@@ -134,14 +117,110 @@ class Autruche:
         ecran.blit(self.image, (self.x, self.y))
 
     def lancer_boule_feu(self):
+        global ressources
+        son_autruche = ressources['son_autruche']
+        taille_cellule = ressources['taille_cellule']
         if self.boule_feu is None:
             direction = random.choice(["gauche", "droite"])
             self.boule_feu = BouleFeu(self.x, self.y + taille_cellule, direction)
             son_autruche.play()
 
 
+class Serpent:
+    def __init__(self, x, y, longueur, vitesse):
+        self.x = x
+        self.y = y
+        self.longueur = longueur
+        self.vitesse = vitesse
+        self.direction_x = 0
+        self.direction_y = 0
+        self.corps = [[self.x, self.y]]
+
+    def maj_position(self):
+        self.x += self.direction_x
+        self.y += self.direction_y
+        self.corps.append([self.x, self.y])
+        if len(self.corps) > self.longueur:
+            del self.corps[0]
+
+    def change_direction(self, direction_x, direction_y):
+        self.direction_x = direction_x
+        self.direction_y = direction_y
+
+    def collision_mur(self, largeur_ecran, hauteur_ecran):
+        return self.x >= largeur_ecran or self.x < 0 or self.y >= hauteur_ecran or self.y < 0
+
+    def collision_soi_meme(self):
+        return [self.x, self.y] in self.corps[:-1]
+
+    def manger_pomelos(self):
+        self.longueur += 1
+
+    def dessiner(self, ecran, taille_cellule, couleur_snake, image_tete):
+        for index, segment in enumerate(self.corps):
+            if index == len(self.corps) - 1:  # Si le segment est la tête
+                if self.direction_y == -taille_cellule:  # Aller vers le haut
+                    image_tete_rotated = pygame.transform.rotate(image_tete, 180)
+                elif self.direction_y == taille_cellule:  # Aller vers le bas
+                    image_tete_rotated = pygame.transform.rotate(image_tete, 0)
+                elif self.direction_x == -taille_cellule:  # Aller vers la gauche
+                    image_tete_rotated = pygame.transform.rotate(image_tete, 270)
+                else:  # Aller vers la droite
+                    image_tete_rotated = pygame.transform.rotate(image_tete, 90)
+
+                ecran.blit(image_tete_rotated, (segment[0] - taille_cellule * 0.25, segment[1] - taille_cellule * 0.25))
+            else:  # Sinon c'est le corps
+                pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
+
+
 # Fonction principale du jeu
-def afficher_score(longueur):
+def charger_ressources():
+    taille_cellule = 20
+
+    # Chargement des images
+    image_tete = pygame.image.load("pic/serpent_tete.png")
+    image_tete = pygame.transform.scale(image_tete, (taille_cellule * 1.5, taille_cellule * 1.5))
+
+    image_fireball = pygame.image.load("pic/fireball.png")
+    image_fireball = pygame.transform.scale(image_fireball, ((int(taille_cellule * 1.1)), (int(taille_cellule * 1.3))))
+
+    image_autruche = pygame.image.load("pic/autruche.png")
+    image_autruche = pygame.transform.scale(image_autruche, (taille_cellule, taille_cellule * 2))
+    image_autruche_gauche = pygame.transform.flip(image_autruche, True, False)
+
+    image_fond = pygame.image.load("pic/background.png")
+    image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
+
+    couleur_snake = (0, 255, 0)
+    couleur_fond = (0, 0, 0)
+
+    # Chargement des sons
+    son_pomelos = pygame.mixer.Sound("sound/pomelos.wav")
+    son_autruche = pygame.mixer.Sound("sound/autruche.wav")
+    son_boule_de_feu = pygame.mixer.Sound("sound/boule_de_feu.wav")
+    son_perdu = pygame.mixer.Sound("sound/perdu.wav")
+
+    # Chargement de la police
+    police = pygame.font.Font("tools/Arial.ttf", 24)
+
+    return {
+        'taille_cellule' : taille_cellule,
+        'image_tete': image_tete,
+        'image_fireball': image_fireball,
+        'image_autruche': image_autruche,
+        'image_autruche_gauche': image_autruche_gauche,
+        'image_fond': image_fond,
+        'son_pomelos': son_pomelos,
+        'son_autruche': son_autruche,
+        'son_boule_de_feu': son_boule_de_feu,
+        'son_perdu': son_perdu,
+        'police': police,
+        'couleur_snake' : couleur_snake,
+        'couleur_fond' : couleur_fond
+    }
+
+
+def afficher_score(longueur, police):
     texte = police.render("Pomelos: " + str(longueur), True, (255, 255, 255))
     ecran.blit(texte, (10, 10))
 
@@ -160,10 +239,12 @@ def charger_highscore():
             return 0
 
 
-pomelos = Fruit("pic/pomelos1.png", "sound/pomelos.wav")
+
 
 
 def afficher_menu_pause():
+    global ressources
+    police = ressources['police']
     ecran.fill((0, 0, 0))
     texte_pause = police.render("Pause", True, (255, 255, 255))
     texte_reprendre = police.render("Reprendre", True, (255, 255, 255))
@@ -182,45 +263,45 @@ def check_collision(obj1_x, obj1_y, obj1_size, obj2_x, obj2_y, obj2_size):
 
 def perdu(serpent_corps):
     global jeu_termine
+    global ressources
+    taille_cellule =  ressources['taille_cellule']
 
     # Mise à jour du jeu pour indiquer qu'il est terminé
     jeu_termine = True
 
     # Jouer le son de la défaite
-    son_perdu.play()
+    ressources['son_perdu'].play()
 
     # Faire disparaître le serpent
     for _ in range(10):
         for segment in serpent_corps:
-            pygame.draw.rect(ecran, couleur_fond, [segment[0], segment[1], taille_cellule, taille_cellule])
+            pygame.draw.rect(ecran, ressources['couleur_fond'], [segment[0], segment[1], taille_cellule, taille_cellule])
         pygame.display.update()
         pygame.time.wait(100)
         for segment in serpent_corps:
-            pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
+            pygame.draw.rect(ecran, ressources['couleur_snake'], [segment[0], segment[1], taille_cellule, taille_cellule])
         pygame.display.update()
         pygame.time.wait(100)
 
 def jeu_snake():
     # Initialisation de la position et de la direction du serpent
-    serpent_x = largeur_ecran // 2
-    serpent_y = hauteur_ecran // 2
-    direction_x = 0
-    direction_y = 0
+    serpent = Serpent(largeur_ecran // 2, hauteur_ecran // 2, 1, 15)
     global image_tete
     global jeu_termine
-
+    global ressources
+    ressources = charger_ressources()
     # initialisation du high score
 
     high_score = charger_highscore()
 
-    # Initialisation de la longueur du serpent
-    serpent_longueur = 1
-    serpent_corps = []
-    serpent_vitesse = 15
 
     # Initialisation de l'autruche
+    taille_cellule = ressources['taille_cellule']
+
     autruche = Autruche(random.randint(0, largeur_ecran - taille_cellule),
                         random.randint(0, hauteur_ecran - taille_cellule * 2))
+
+    pomelos = Fruit("pic/pomelos1.png", "sound/pomelos.wav")
 
     # Variables de contrôle du jeu
     jeu_termine = False
@@ -233,18 +314,14 @@ def jeu_snake():
             if event.type == pygame.QUIT:
                 jeu_termine = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT and direction_x != taille_cellule:  # prevent going right when moving left
-                    direction_x = -taille_cellule
-                    direction_y = 0
-                elif event.key == pygame.K_RIGHT and direction_x != -taille_cellule:  # prevent going left when moving right
-                    direction_x = taille_cellule
-                    direction_y = 0
-                elif event.key == pygame.K_UP and direction_y != taille_cellule:  # prevent going down when moving up
-                    direction_x = 0
-                    direction_y = -taille_cellule
-                elif event.key == pygame.K_DOWN and direction_y != -taille_cellule:  # prevent going up when moving down
-                    direction_x = 0
-                    direction_y = taille_cellule
+                if event.key == pygame.K_LEFT and serpent.direction_x != taille_cellule:  # prevent going right when moving left
+                    serpent.change_direction(-taille_cellule, 0)
+                elif event.key == pygame.K_RIGHT and serpent.direction_x != -taille_cellule:  # prevent going left when moving right
+                    serpent.change_direction(taille_cellule, 0)
+                elif event.key == pygame.K_UP and serpent.direction_y != taille_cellule:  # prevent going down when moving up
+                    serpent.change_direction(0, -taille_cellule)
+                elif event.key == pygame.K_DOWN and serpent.direction_y != -taille_cellule:  # prevent going up when moving down
+                    serpent.change_direction(0, taille_cellule)
                 elif event.key == pygame.K_ESCAPE:
                     jeu_en_pause = not jeu_en_pause
                     if jeu_en_pause:
@@ -257,14 +334,14 @@ def jeu_snake():
             continue
 
         # Mise à jour de la position du serpent
-        serpent_x += direction_x
-        serpent_y += direction_y
+        serpent.maj_position()
 
         # Vérification des collisions avec les bords de l'écran
-        if serpent_x >= largeur_ecran or serpent_x < 0 or serpent_y >= hauteur_ecran or serpent_y < 0:
-            perdu(serpent_corps)
+        if serpent.collision_mur(largeur_ecran, hauteur_ecran):
+            perdu(serpent.corps)
 
         # Affichage de l'image de fond
+        image_fond = ressources['image_fond']
         ecran.blit(image_fond, (0, 0))
 
         # Affichage de la pomelos
@@ -278,68 +355,52 @@ def jeu_snake():
         if autruche.boule_feu is not None:
             autruche.boule_feu.deplacer()
             autruche.boule_feu.afficher()
-            # if int(serpent_x) == int(autruche.boule_feu.x) and int(serpent_y) == int(autruche.boule_feu.y)
-            if check_collision(serpent_x, serpent_y, taille_cellule, autruche.boule_feu.x, autruche.boule_feu.y,
+            if check_collision(serpent.x, serpent.y, taille_cellule, autruche.boule_feu.x, autruche.boule_feu.y,
                                taille_cellule):
-                son_boule_de_feu.play()
-                perdu(serpent_corps)
+                ressources['son_boule_de_feu'].play()
+                perdu(serpent.corps)
             if autruche.boule_feu.x < 0 or autruche.boule_feu.x >= largeur_ecran:
                 autruche.boule_feu = None
 
         # Vérification de la collision entre l'autruche et le serpent
-        if check_collision(serpent_x, serpent_y, taille_cellule, autruche.x, autruche.y, taille_cellule):
-            son_autruche.play()
-            perdu(serpent_corps)
+        if check_collision(serpent.x, serpent.y, taille_cellule, autruche.x, autruche.y, taille_cellule):
+            ressources['son_autruche'].play()
+            perdu(serpent.corps)
 
         # Vérification de la collision avec le pomelos
-        if check_collision(serpent_x, serpent_y, taille_cellule, pomelos.x, pomelos.y, taille_cellule):
+        if check_collision(serpent.x, serpent.y, taille_cellule, pomelos.x, pomelos.y, taille_cellule):
             pomelos.manger()
-            serpent_longueur += 1
+            serpent.manger_pomelos()
 
-            if (serpent_longueur - 1) > high_score:
-                enregistrer_highscore(serpent_longueur - 1)
+            if (serpent.longueur - 1) > high_score:
+                enregistrer_highscore(serpent.longueur - 1)
 
-        # Mise à jour du corps du serpent
-        serpent_tete = [serpent_x, serpent_y]
-        serpent_corps.append(serpent_tete)
-        if len(serpent_corps) > serpent_longueur:
-            del serpent_corps[0]
 
         # Vérification des collisions avec le corps du serpent
-        for segment in serpent_corps[:-1]:
-            if segment == serpent_tete:
-                perdu(serpent_corps)
+        if serpent.collision_soi_meme():
+            perdu(serpent.corps)
 
         # Dessin du serpent
-        for index, segment in enumerate(serpent_corps):
-            if index == len(serpent_corps) - 1:  # Si le segment est la tête
-                if direction_y == -taille_cellule:  # Aller vers le haut
-                    image_tete_rotated = pygame.transform.rotate(image_tete, 180)
-                elif direction_y == taille_cellule:  # Aller vers le bas
-                    image_tete_rotated = pygame.transform.rotate(image_tete, 0)
-                elif direction_x == -taille_cellule:  # Aller vers la gauche
-                    image_tete_rotated = pygame.transform.rotate(image_tete, 270)
-                else:  # Aller vers la droite
-                    image_tete_rotated = pygame.transform.rotate(image_tete, 90)
+        serpent.dessiner(ecran, taille_cellule, ressources['couleur_snake'], ressources['image_tete'])
 
-                ecran.blit(image_tete_rotated, (segment[0] - taille_cellule * 0.25, segment[1] - taille_cellule * 0.25))
-            else:  # Sinon c'est le corps
-                pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
+        # Déterminer le score à afficher
+        if high_score > serpent.longueur - 1:
+            score_affiche = high_score
+        else:
+            score_affiche = serpent.longueur - 1
 
-        # affichage du high score
-        texte_highscore = police.render("High Score: " + str(high_score), True, (255, 255, 255))
+        # Générer le texte du score
+        texte_highscore = ressources['police'].render("High Score: " + str(score_affiche), True, (255, 255, 255))
+
+        # Définir l'emplacement du score
         rect_highscore = texte_highscore.get_rect()
         rect_highscore.topright = (largeur_ecran - 10, 10)
-        ecran.blit(texte_highscore, rect_highscore)
 
-        # affichage du high score
-        texte_highscore = police.render("High Score: " + str(high_score), True, (255, 255, 255))
-        rect_highscore = texte_highscore.get_rect()
-        rect_highscore.topright = (largeur_ecran - 10, 10)
+        # Afficher le score
         ecran.blit(texte_highscore, rect_highscore)
 
         # affichage du score
-        afficher_score(serpent_longueur - 1)
+        afficher_score(serpent.longueur - 1, ressources['police'])
 
         # Mise à jour de l'écran
         pygame.display.update()
@@ -348,8 +409,7 @@ def jeu_snake():
         autruche.lancer_boule_feu()
 
         # Limite de vitesse du serpent
-        clock.tick(serpent_vitesse)
-
+        clock.tick(serpent.vitesse)
     # Fermeture de la fenêtre Pygame
     pygame.quit()
 
