@@ -1,5 +1,6 @@
 import pygame
 import random
+import requests
 
 # Initialisation de Pygame
 pygame.init()
@@ -14,7 +15,8 @@ ecran = pygame.display.set_mode((largeur_ecran, hauteur_ecran))
 pygame.display.set_caption("Snake Game")
 
 jeu_termine = False
-
+high_score =0
+jeu_en_pause = False
 
 class Fruit:
 
@@ -188,6 +190,9 @@ def charger_ressources():
     image_autruche = pygame.transform.scale(image_autruche, (taille_cellule, taille_cellule * 2))
     image_autruche_gauche = pygame.transform.flip(image_autruche, True, False)
 
+    image_pomelo = pygame.image.load("pic/pomelos1.png")  # Chemin vers l'image du pomelo
+    image_pomelo = pygame.transform.scale(image_pomelo, (35, 35))  # Ajustez la taille du pomelo
+
     image_fond = pygame.image.load("pic/background.png")
     image_fond = pygame.transform.scale(image_fond, (largeur_ecran, hauteur_ecran))
 
@@ -210,6 +215,7 @@ def charger_ressources():
         'image_autruche': image_autruche,
         'image_autruche_gauche': image_autruche_gauche,
         'image_fond': image_fond,
+        'image_pomelo' : image_pomelo,
         'son_pomelos': son_pomelos,
         'son_autruche': son_autruche,
         'son_boule_de_feu': son_boule_de_feu,
@@ -226,44 +232,170 @@ def afficher_score(longueur, police):
 
 
 def enregistrer_highscore(score):
-    with open("highscore.txt", "w") as fichier:
-        fichier.write(str(score))
+    payload = {"new_content": str(score)}
+    requests.post("http://localhost:5000/api/update_content", json=payload)
 
 
 def charger_highscore():
-    with open("highscore.txt", "r") as fichier:
-        contenu = fichier.read()
-        if contenu:
-            return int(contenu)
-        else:
-            return 0
+    reponse = requests.get("http://localhost:5000/api/get_content")
+    data = reponse.json()
+    contenu = data.get('content')
+    if contenu:
+        return int(contenu)
+    else:
+        return 0
 
 
+def compte_a_rebours(ecran, ressources):
+    police = ressources['police']
+    for i in range(3, 0, -1):
+        ecran.fill(ressources['couleur_fond'])
+        texte_compte_a_rebours = police.render(str(i), True, (255, 255, 255))
+        rect_compte_a_rebours = texte_compte_a_rebours.get_rect(center=(largeur_ecran // 2, hauteur_ecran // 2))
+        ecran.blit(texte_compte_a_rebours, rect_compte_a_rebours)
 
+        # Ajouter le texte sous le compteur
+        texte_astuce = police.render("Astuce : Prépare tes touches (bas, haut, gauche, droite)", True, (255, 255, 255))
+        rect_astuce = texte_astuce.get_rect(center=(largeur_ecran // 2, hauteur_ecran // 2 + 50))
+        ecran.blit(texte_astuce, rect_astuce)
+
+        pygame.display.update()
+        pygame.time.wait(1000)
+
+def afficher_bouton(ecran, texte, position, survol):
+    police = ressources['police']
+    couleur_texte = (255, 255, 255)
+    couleur_survol = (200, 200, 200)
+
+    if survol:
+        couleur_texte = couleur_survol
+
+    texte_bouton = police.render(texte, True, couleur_texte)
+    rect_bouton = texte_bouton.get_rect(center=position)
+    ecran.blit(texte_bouton, rect_bouton)
+    return rect_bouton
+
+
+def afficher_menu_principal(ecran, ressources):
+    largeur_ecran = ecran.get_width()
+    hauteur_ecran = ecran.get_height()
+
+    bouton_jouer_survol = False
+    bouton_quitter_survol = False
+
+    autruche_x, autruche_y = largeur_ecran // 2 + 40, hauteur_ecran // 2 -25
+    image_autruche = pygame.transform.scale(ressources['image_autruche'], (35, 35))  # Ajustez la taille
+    pomelo_x, pomelo_y = largeur_ecran // 2 -80 , hauteur_ecran // 2 -25
+    image_pomelo = pygame.transform.scale(ressources['image_pomelo'], (35, 35))
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+
+                rect_bouton_jouer = afficher_bouton(ecran, "Jouer", (largeur_ecran // 2, hauteur_ecran // 2),
+                                                    bouton_jouer_survol)
+                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 40),
+                                                      bouton_quitter_survol)
+
+                if rect_bouton_jouer.collidepoint(mouse_x, mouse_y):
+                    compte_a_rebours(ecran, ressources)  # Appel de la fonction de compte à rebours
+                    return True  # Démarrer la partie
+                elif rect_bouton_quitter.collidepoint(mouse_x, mouse_y):
+                    pygame.quit()
+                    quit()
+
+            else:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                rect_bouton_jouer = afficher_bouton(ecran, "Jouer", (largeur_ecran // 2, hauteur_ecran // 2),
+                                                    bouton_jouer_survol)
+                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 40),
+                                                      bouton_quitter_survol)
+
+                bouton_jouer_survol = rect_bouton_jouer.collidepoint(mouse_x, mouse_y)
+                bouton_quitter_survol = rect_bouton_quitter.collidepoint(mouse_x, mouse_y)
+
+                ecran.fill((0, 0, 0))  # Efface l'écran
+                afficher_bouton(ecran, "Jouer", (largeur_ecran // 2, hauteur_ecran // 2), bouton_jouer_survol)
+                afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 40), bouton_quitter_survol)
+
+                # Affiche l'image de l'autruche à côté du bouton sélectionné
+                if bouton_jouer_survol:
+                    ecran.blit(image_autruche, (autruche_x, autruche_y))
+                    ecran.blit(image_pomelo, (pomelo_x, pomelo_y))
+                elif bouton_quitter_survol:
+                    ecran.blit(image_autruche, (autruche_x, autruche_y + 40))  # Ajustez la position
+                    ecran.blit(image_pomelo, (pomelo_x, pomelo_y + 40))
+                pygame.display.update()  # Met à jour l'écran
 
 
 def afficher_menu_pause():
-    global ressources
-    police = ressources['police']
-    ecran.fill((0, 0, 0))
-    texte_pause = police.render("Pause", True, (255, 255, 255))
-    texte_reprendre = police.render("Reprendre", True, (255, 255, 255))
-    texte_quitter = police.render("Quitter", True, (255, 255, 255))
+    global jeu_en_pause
+    largeur_ecran = ecran.get_width()
+    hauteur_ecran = ecran.get_height()
 
-    ecran.blit(texte_pause,
-               (largeur_ecran // 2 - texte_pause.get_width() // 2, hauteur_ecran // 2 - texte_pause.get_height() // 2))
-    ecran.blit(texte_reprendre, (largeur_ecran // 2 - texte_reprendre.get_width() // 2, hauteur_ecran // 2 + 20))
-    ecran.blit(texte_quitter, (largeur_ecran // 2 - texte_quitter.get_width() // 2, hauteur_ecran // 2 + 60))
-    pygame.display.update()
+    bouton_reprendre_survol = False
+    bouton_quitter_survol = False
+
+    autruche_x, autruche_y = largeur_ecran // 2 + 40, hauteur_ecran // 2 + 5
+    image_autruche = pygame.transform.scale(ressources['image_autruche'], (35, 35))
+    pomelo_x, pomelo_y = largeur_ecran // 2 - 80, hauteur_ecran // 2 + 5
+    image_pomelo = pygame.transform.scale(ressources['image_pomelo'], (35, 35))
+
+    while jeu_en_pause:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                quit()
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+
+                rect_bouton_reprendre = afficher_bouton(ecran, "Reprendre", (largeur_ecran // 2, hauteur_ecran // 2 + 20),
+                                                        bouton_reprendre_survol)
+                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 60),
+                                                      bouton_quitter_survol)
+
+                if rect_bouton_reprendre.collidepoint(mouse_x, mouse_y):
+                    jeu_en_pause = False
+                elif rect_bouton_quitter.collidepoint(mouse_x, mouse_y):
+                    pygame.quit()
+                    quit()
+            else:
+                mouse_x, mouse_y = pygame.mouse.get_pos()
+                rect_bouton_reprendre = afficher_bouton(ecran, "Reprendre", (largeur_ecran // 2, hauteur_ecran // 2 + 20),
+                                                        bouton_reprendre_survol)
+                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 60),
+                                                      bouton_quitter_survol)
+
+                bouton_reprendre_survol = rect_bouton_reprendre.collidepoint(mouse_x, mouse_y)
+                bouton_quitter_survol = rect_bouton_quitter.collidepoint(mouse_x, mouse_y)
+
+                ecran.fill((0, 0, 0))
+                afficher_bouton(ecran, "Reprendre", (largeur_ecran // 2, hauteur_ecran // 2 + 30), bouton_reprendre_survol)
+                afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 60), bouton_quitter_survol)
+
+                if bouton_reprendre_survol:
+                    ecran.blit(image_autruche, (autruche_x +20 , autruche_y))
+                    ecran.blit(image_pomelo, (pomelo_x - 20, pomelo_y))
+                elif bouton_quitter_survol:
+                    ecran.blit(image_autruche, (autruche_x, autruche_y + 40))
+                    ecran.blit(image_pomelo, (pomelo_x, pomelo_y + 40))
+                pygame.display.update()
+
+
 
 def check_collision(obj1_x, obj1_y, obj1_size, obj2_x, obj2_y, obj2_size):
     if (obj2_x - obj1_size) < obj1_x < (obj2_x + obj2_size) and (obj2_y - obj1_size) < obj1_y < (obj2_y + obj2_size):
         return True
     return False
 
-def perdu(serpent_corps):
+def perdu(serpent_corps, serpent):
     global jeu_termine
     global ressources
+    global high_score
     taille_cellule =  ressources['taille_cellule']
 
     # Mise à jour du jeu pour indiquer qu'il est terminé
@@ -271,6 +403,9 @@ def perdu(serpent_corps):
 
     # Jouer le son de la défaite
     ressources['son_perdu'].play()
+    if (serpent.longueur - 1) > high_score:
+        high_score = serpent.longueur - 1
+        enregistrer_highscore(high_score)
 
     # Faire disparaître le serpent
     for _ in range(10):
@@ -289,12 +424,15 @@ def jeu_snake():
     global image_tete
     global jeu_termine
     global ressources
-    ressources = charger_ressources()
-    # initialisation du high score
+    global jeu_en_pause
+    global high_score
 
+    ressources = charger_ressources()
+
+    # initialisation du high score
     high_score = charger_highscore()
 
-
+    afficher_menu_principal(ecran, ressources)
     # Initialisation de l'autruche
     taille_cellule = ressources['taille_cellule']
 
@@ -338,7 +476,7 @@ def jeu_snake():
 
         # Vérification des collisions avec les bords de l'écran
         if serpent.collision_mur(largeur_ecran, hauteur_ecran):
-            perdu(serpent.corps)
+            perdu(serpent.corps, serpent)
 
         # Affichage de l'image de fond
         image_fond = ressources['image_fond']
@@ -358,27 +496,23 @@ def jeu_snake():
             if check_collision(serpent.x, serpent.y, taille_cellule, autruche.boule_feu.x, autruche.boule_feu.y,
                                taille_cellule):
                 ressources['son_boule_de_feu'].play()
-                perdu(serpent.corps)
+                perdu(serpent.corps, serpent)
             if autruche.boule_feu.x < 0 or autruche.boule_feu.x >= largeur_ecran:
                 autruche.boule_feu = None
 
         # Vérification de la collision entre l'autruche et le serpent
         if check_collision(serpent.x, serpent.y, taille_cellule, autruche.x, autruche.y, taille_cellule):
             ressources['son_autruche'].play()
-            perdu(serpent.corps)
+            perdu(serpent.corps, serpent)
 
         # Vérification de la collision avec le pomelos
         if check_collision(serpent.x, serpent.y, taille_cellule, pomelos.x, pomelos.y, taille_cellule):
             pomelos.manger()
             serpent.manger_pomelos()
 
-            if (serpent.longueur - 1) > high_score:
-                enregistrer_highscore(serpent.longueur - 1)
-
-
         # Vérification des collisions avec le corps du serpent
         if serpent.collision_soi_meme():
-            perdu(serpent.corps)
+            perdu(serpent.corps, serpent)
 
         # Dessin du serpent
         serpent.dessiner(ecran, taille_cellule, ressources['couleur_snake'], ressources['image_tete'])
