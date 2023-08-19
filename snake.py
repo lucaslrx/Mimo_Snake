@@ -2,6 +2,8 @@ import pygame
 import random
 import requests
 
+global ressources
+
 # Initialisation de Pygame
 pygame.init()
 pygame.mixer.init()
@@ -19,9 +21,8 @@ high_score =0
 jeu_en_pause = False
 
 class Fruit:
-
+    global ressources
     def __init__(self, image_path, sound_path):
-        global ressources
         taille_cellule = ressources['taille_cellule']
         self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
         self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
@@ -33,18 +34,16 @@ class Fruit:
         ecran.blit(self.image, (self.x, self.y))
 
     def manger(self):
-        global ressources
         taille_cellule = ressources['taille_cellule']
         self.sound.play()
         self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
         self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
 
 
-
 # Classe pour la boule de feu
 class BouleFeu:
+    global ressources
     def __init__(self, x, y, direction):
-        global ressources
         taille_cellule = ressources['taille_cellule']
         self.x = x
         self.y = y
@@ -76,11 +75,11 @@ class BouleFeu:
             self.image_counter = 0
 
 
-
 # Classe pour l'autruche
 class Autruche:
+    global ressources
+
     def __init__(self, x, y):
-        global ressources
         image_autruche = ressources['image_autruche']
         self.x = x
         self.y = y
@@ -92,7 +91,6 @@ class Autruche:
         self.image = image_autruche
 
     def deplacer(self):
-        global ressources
         taille_cellule = ressources['taille_cellule']
         image_autruche = ressources['image_autruche']
         image_autruche_gauche = ressources['image_autruche_gauche']
@@ -119,7 +117,6 @@ class Autruche:
         ecran.blit(self.image, (self.x, self.y))
 
     def lancer_boule_feu(self):
-        global ressources
         son_autruche = ressources['son_autruche']
         taille_cellule = ressources['taille_cellule']
         if self.boule_feu is None:
@@ -137,6 +134,8 @@ class Serpent:
         self.direction_x = 0
         self.direction_y = 0
         self.corps = [[self.x, self.y]]
+        self.tue_autruche = False
+        self.clignotement = False
 
     def maj_position(self):
         self.x += self.direction_x
@@ -160,6 +159,11 @@ class Serpent:
 
     def dessiner(self, ecran, taille_cellule, couleur_snake, image_tete):
         for index, segment in enumerate(self.corps):
+            if self.clignotement and pygame.time.get_ticks() % 250 < 125:  # le serpent clignote en jaune
+                pygame.draw.rect(ecran, ressources['couleur_clignotement'],
+                                 [segment[0], segment[1], taille_cellule, taille_cellule])
+                continue
+
             if index == len(self.corps) - 1:  # Si le segment est la tête
                 if self.direction_y == -taille_cellule:  # Aller vers le haut
                     image_tete_rotated = pygame.transform.rotate(image_tete, 180)
@@ -174,8 +178,12 @@ class Serpent:
             else:  # Sinon c'est le corps
                 pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
 
+    def clignoter(self, etat):
+        self.clignotement = etat
 
 # Fonction principale du jeu
+
+
 def charger_ressources():
     taille_cellule = 20
 
@@ -198,6 +206,7 @@ def charger_ressources():
 
     couleur_snake = (0, 255, 0)
     couleur_fond = (0, 0, 0)
+    couleur_clignotement = (255, 255, 0)
 
     # Chargement des sons
     son_pomelos = pygame.mixer.Sound("sound/pomelos.wav")
@@ -209,7 +218,7 @@ def charger_ressources():
     police = pygame.font.Font("tools/Arial.ttf", 24)
 
     return {
-        'taille_cellule' : taille_cellule,
+        'taille_cellule': taille_cellule,
         'image_tete': image_tete,
         'image_fireball': image_fireball,
         'image_autruche': image_autruche,
@@ -221,8 +230,9 @@ def charger_ressources():
         'son_boule_de_feu': son_boule_de_feu,
         'son_perdu': son_perdu,
         'police': police,
-        'couleur_snake' : couleur_snake,
-        'couleur_fond' : couleur_fond
+        'couleur_snake': couleur_snake,
+        'couleur_fond': couleur_fond,
+        'couleur_clignotement': couleur_clignotement
     }
 
 
@@ -244,6 +254,7 @@ def charger_highscore():
         return int(contenu)
     else:
         return 0
+
 
 
 def compte_a_rebours(ecran, ressources):
@@ -387,10 +398,12 @@ def afficher_menu_pause():
 
 
 
+
 def check_collision(obj1_x, obj1_y, obj1_size, obj2_x, obj2_y, obj2_size):
     if (obj2_x - obj1_size) < obj1_x < (obj2_x + obj2_size) and (obj2_y - obj1_size) < obj1_y < (obj2_y + obj2_size):
         return True
     return False
+
 
 def perdu(serpent_corps, serpent):
     global jeu_termine
@@ -418,10 +431,10 @@ def perdu(serpent_corps, serpent):
         pygame.display.update()
         pygame.time.wait(100)
 
+
 def jeu_snake():
     # Initialisation de la position et de la direction du serpent
     serpent = Serpent(largeur_ecran // 2, hauteur_ecran // 2, 1, 15)
-    global image_tete
     global jeu_termine
     global ressources
     global jeu_en_pause
@@ -432,12 +445,21 @@ def jeu_snake():
     # initialisation du high score
     high_score = charger_highscore()
 
+    # variables temps pour fruit spécial
+    temps_fruit_special = pygame.time.get_ticks()
+    fruit_special = None
+    duree_fruit_special = 5000 # en ms
+    fruit_special_temps_Effet = 0
+    temps_apparition_fruit_special = None
     afficher_menu_principal(ecran, ressources)
+    
     # Initialisation de l'autruche
     taille_cellule = ressources['taille_cellule']
 
     autruche = Autruche(random.randint(0, largeur_ecran - taille_cellule),
                         random.randint(0, hauteur_ecran - taille_cellule * 2))
+    autruche_vivant = True
+    autruche_disparition_temps = None
 
     pomelos = Fruit("pic/pomelos1.png", "sound/pomelos.wav")
 
@@ -445,6 +467,8 @@ def jeu_snake():
     jeu_termine = False
     jeu_en_pause = False
     clock = pygame.time.Clock()
+    autruche_mange = False
+    points_supplementaires = 0
 
     # Boucle principale du jeu
     while not jeu_termine:
@@ -470,9 +494,34 @@ def jeu_snake():
         if jeu_en_pause:
             afficher_menu_pause()
             continue
+        if pygame.time.get_ticks() - temps_fruit_special >= 5000 and not fruit_special:
+            temps_fruit_special = pygame.time.get_ticks()
+
+            if random.randint(1, 5) == 1:
+                fruit_special = Fruit("pic/pomelos.png", "sound/pomelos.wav")
+                temps_apparition_fruit_special = pygame.time.get_ticks()
+                print("apparition fruit spécial")
+            else :
+                fruit_special = None
+
+        # Make special fruit disappear after 5 seconds
+        if fruit_special and pygame.time.get_ticks() - temps_apparition_fruit_special >= 5000:
+            fruit_special = None
+
+
 
         # Mise à jour de la position du serpent
         serpent.maj_position()
+
+        # Dessin du serpent
+        # Si autruche_mange est True, faire clignoter le serpent
+        if autruche_mange:
+            if pygame.time.get_ticks() % 250 < 125:  # Clignote toutes les 250 millisecondes
+                serpent.clignoter(True)
+            else:
+                serpent.clignoter(False)
+        else:
+            serpent.clignoter(False)
 
         # Vérification des collisions avec les bords de l'écran
         if serpent.collision_mur(largeur_ecran, hauteur_ecran):
@@ -484,10 +533,15 @@ def jeu_snake():
 
         # Affichage de la pomelos
         pomelos.afficher()
+        # apparition fruit spécial
+        if fruit_special:
+            print(f"Prêt à afficher le fruit spécial à ({fruit_special.x}, {fruit_special.y})")
+            fruit_special.afficher()
 
         # Déplacement et affichage de l'autruche
-        autruche.deplacer()
-        autruche.afficher()
+        if autruche_vivant :
+            autruche.deplacer()
+            autruche.afficher()
 
         # Vérification de la collision entre la boule de feu et le serpent
         if autruche.boule_feu is not None:
@@ -500,10 +554,38 @@ def jeu_snake():
             if autruche.boule_feu.x < 0 or autruche.boule_feu.x >= largeur_ecran:
                 autruche.boule_feu = None
 
+        # collision serpent fruit spécial
+        if fruit_special is not None and check_collision(serpent.x, serpent.y, taille_cellule, fruit_special.x,
+                                                         fruit_special.y, taille_cellule):
+            fruit_special.manger()
+            autruche_mange = True
+            fruit_special = None
+            fruit_special_temps_Effet = pygame.time.get_ticks() + duree_fruit_special
+
+            # If effect of special fruit should end
+        if pygame.time.get_ticks() >= fruit_special_temps_Effet:
+            autruche_mange = False
+
         # Vérification de la collision entre l'autruche et le serpent
-        if check_collision(serpent.x, serpent.y, taille_cellule, autruche.x, autruche.y, taille_cellule):
-            ressources['son_autruche'].play()
-            perdu(serpent.corps, serpent)
+        if autruche_vivant and check_collision(serpent.x, serpent.y, taille_cellule, autruche.x, autruche.y,
+                                               taille_cellule):
+            if autruche_mange:
+                ressources['son_autruche'].play()
+                autruche_disparition_temps = pygame.time.get_ticks()  # temps de disparition de l'autruche
+                autruche.x = -100  # déplace l'autruche hors de l'écran
+                serpent.longueur += 2
+                autruche_mange = False
+                autruche_vivant = False
+                serpent.clignotement = False
+            else:
+                perdu(serpent.corps)
+
+        # Faire réapparaître l'autruche après quelques secondes
+        if not autruche_vivant and pygame.time.get_ticks() - autruche_disparition_temps >= 5000:  # 5000 millisecondes = 5 secondes
+            autruche_vivant = True
+            autruche = Autruche(random.randint(0, largeur_ecran - taille_cellule),
+                                random.randint(0, hauteur_ecran - taille_cellule * 2))
+            autruche_mange = False
 
         # Vérification de la collision avec le pomelos
         if check_collision(serpent.x, serpent.y, taille_cellule, pomelos.x, pomelos.y, taille_cellule):
@@ -541,6 +623,8 @@ def jeu_snake():
 
         # Lancer une nouvelle boule de feu
         autruche.lancer_boule_feu()
+
+
 
         # Limite de vitesse du serpent
         clock.tick(serpent.vitesse)
