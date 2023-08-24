@@ -17,11 +17,13 @@ ecran = pygame.display.set_mode((largeur_ecran, hauteur_ecran))
 pygame.display.set_caption("Snake Game")
 
 jeu_termine = False
-high_score =0
+high_score = 0
 jeu_en_pause = False
+
 
 class Fruit:
     global ressources
+
     def __init__(self, image_path, sound_path):
         taille_cellule = ressources['taille_cellule']
         self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
@@ -43,6 +45,7 @@ class Fruit:
 # Classe pour la boule de feu
 class BouleFeu:
     global ressources
+
     def __init__(self, x, y, direction):
         taille_cellule = ressources['taille_cellule']
         self.x = x
@@ -148,8 +151,8 @@ class Serpent:
         self.direction_x = direction_x
         self.direction_y = direction_y
 
-    def collision_mur(self, largeur_ecran, hauteur_ecran):
-        return self.x >= largeur_ecran or self.x < 0 or self.y >= hauteur_ecran or self.y < 0
+    def collision_mur(self, largeur_limite, hauteur_limite):
+        return self.x >= largeur_limite or self.x < 0 or self.y >= hauteur_limite or self.y < 0
 
     def collision_soi_meme(self):
         return [self.x, self.y] in self.corps[:-1]
@@ -157,10 +160,10 @@ class Serpent:
     def manger_pomelos(self):
         self.longueur += 1
 
-    def dessiner(self, ecran, taille_cellule, couleur_snake, image_tete):
+    def dessiner(self, ecran_dessiner, taille_cellule, couleur_snake, image_tete):
         for index, segment in enumerate(self.corps):
             if self.clignotement and pygame.time.get_ticks() % 250 < 125:  # le serpent clignote en jaune
-                pygame.draw.rect(ecran, ressources['couleur_clignotement'],
+                pygame.draw.rect(ecran_dessiner, ressources['couleur_clignotement'],
                                  [segment[0], segment[1], taille_cellule, taille_cellule])
                 continue
 
@@ -174,12 +177,15 @@ class Serpent:
                 else:  # Aller vers la droite
                     image_tete_rotated = pygame.transform.rotate(image_tete, 90)
 
-                ecran.blit(image_tete_rotated, (segment[0] - taille_cellule * 0.25, segment[1] - taille_cellule * 0.25))
+                ecran_dessiner.blit(image_tete_rotated, (segment[0] - taille_cellule * 0.25, segment[1]
+                                                         - taille_cellule * 0.25))
             else:  # Sinon c'est le corps
-                pygame.draw.rect(ecran, couleur_snake, [segment[0], segment[1], taille_cellule, taille_cellule])
+                pygame.draw.rect(ecran_dessiner, couleur_snake,
+                                 [segment[0], segment[1], taille_cellule, taille_cellule])
 
     def clignoter(self, etat):
         self.clignotement = etat
+
 
 # Fonction principale du jeu
 
@@ -224,7 +230,7 @@ def charger_ressources():
         'image_autruche': image_autruche,
         'image_autruche_gauche': image_autruche_gauche,
         'image_fond': image_fond,
-        'image_pomelo' : image_pomelo,
+        'image_pomelo': image_pomelo,
         'son_pomelos': son_pomelos,
         'son_autruche': son_autruche,
         'son_boule_de_feu': son_boule_de_feu,
@@ -243,37 +249,50 @@ def afficher_score(longueur, police):
 
 def enregistrer_highscore(score):
     payload = {"new_content": str(score)}
-    requests.post("http://localhost:5000/api/update_content", json=payload)
+    requests.post("http://127.0.0.1:5000/api/update_content", json=payload)
 
 
 def charger_highscore():
-    reponse = requests.get("http://localhost:5000/api/get_content")
-    data = reponse.json()
-    contenu = data.get('content')
-    if contenu:
-        return int(contenu)
-    else:
+    try:
+        reponse = requests.get("http://127.0.0.1:5000/api/get_content")
+
+        # Vérification du code de statut HTTP
+        if reponse.status_code != 200:
+            print(f"Erreur avec le code de statut: {reponse.status_code}")
+            return 0
+
+        data = reponse.json()
+        contenu = data.get('content')
+        if contenu:
+            return int(contenu)
+        else:
+            return 0
+    except requests.exceptions.RequestException as e:
+        print(f"Erreur de requête: {e}")
+        return 0
+    except json.decoder.JSONDecodeError:
+        print("Erreur lors du décodage du JSON.")
         return 0
 
 
-
-def compte_a_rebours(ecran, ressources):
-    police = ressources['police']
+def compte_a_rebours(ecran_compte, ressources_compte):
+    police = ressources_compte['police']
     for i in range(3, 0, -1):
-        ecran.fill(ressources['couleur_fond'])
+        ecran_compte.fill(ressources_compte['couleur_fond'])
         texte_compte_a_rebours = police.render(str(i), True, (255, 255, 255))
         rect_compte_a_rebours = texte_compte_a_rebours.get_rect(center=(largeur_ecran // 2, hauteur_ecran // 2))
-        ecran.blit(texte_compte_a_rebours, rect_compte_a_rebours)
+        ecran_compte.blit(texte_compte_a_rebours, rect_compte_a_rebours)
 
         # Ajouter le texte sous le compteur
         texte_astuce = police.render("Astuce : Prépare tes touches (bas, haut, gauche, droite)", True, (255, 255, 255))
         rect_astuce = texte_astuce.get_rect(center=(largeur_ecran // 2, hauteur_ecran // 2 + 50))
-        ecran.blit(texte_astuce, rect_astuce)
+        ecran_compte.blit(texte_astuce, rect_astuce)
 
         pygame.display.update()
         pygame.time.wait(1000)
 
-def afficher_bouton(ecran, texte, position, survol):
+
+def afficher_bouton(ecran_bouton, texte, position, survol):
     police = ressources['police']
     couleur_texte = (255, 255, 255)
     couleur_survol = (200, 200, 200)
@@ -283,21 +302,21 @@ def afficher_bouton(ecran, texte, position, survol):
 
     texte_bouton = police.render(texte, True, couleur_texte)
     rect_bouton = texte_bouton.get_rect(center=position)
-    ecran.blit(texte_bouton, rect_bouton)
+    ecran_bouton.blit(texte_bouton, rect_bouton)
     return rect_bouton
 
 
-def afficher_menu_principal(ecran, ressources):
-    largeur_ecran = ecran.get_width()
-    hauteur_ecran = ecran.get_height()
+def afficher_menu_principal(ecran_menu, ressources_menu):
+    largeur_ecran_menu = ecran_menu.get_width()
+    hauteur_ecran_menu = ecran_menu.get_height()
 
     bouton_jouer_survol = False
     bouton_quitter_survol = False
 
-    autruche_x, autruche_y = largeur_ecran // 2 + 40, hauteur_ecran // 2 -25
-    image_autruche = pygame.transform.scale(ressources['image_autruche'], (35, 35))  # Ajustez la taille
-    pomelo_x, pomelo_y = largeur_ecran // 2 -80 , hauteur_ecran // 2 -25
-    image_pomelo = pygame.transform.scale(ressources['image_pomelo'], (35, 35))
+    autruche_x, autruche_y = largeur_ecran_menu // 2 + 40, hauteur_ecran_menu // 2 - 25
+    image_autruche = pygame.transform.scale(ressources_menu['image_autruche'], (35, 35))  # Ajustez la taille
+    pomelo_x, pomelo_y = largeur_ecran_menu // 2 - 80, hauteur_ecran_menu // 2 - 25
+    image_pomelo = pygame.transform.scale(ressources_menu['image_pomelo'], (35, 35))
 
     while True:
         for event in pygame.event.get():
@@ -307,13 +326,15 @@ def afficher_menu_principal(ecran, ressources):
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
 
-                rect_bouton_jouer = afficher_bouton(ecran, "Jouer", (largeur_ecran // 2, hauteur_ecran // 2),
+                rect_bouton_jouer = afficher_bouton(ecran_menu, "Jouer",
+                                                    (largeur_ecran_menu // 2, hauteur_ecran_menu // 2),
                                                     bouton_jouer_survol)
-                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 40),
+                rect_bouton_quitter = afficher_bouton(ecran_menu, "Quitter",
+                                                      (largeur_ecran_menu // 2, hauteur_ecran_menu // 2 + 40),
                                                       bouton_quitter_survol)
 
                 if rect_bouton_jouer.collidepoint(mouse_x, mouse_y):
-                    compte_a_rebours(ecran, ressources)  # Appel de la fonction de compte à rebours
+                    compte_a_rebours(ecran_menu, ressources_menu)  # Appel de la fonction de compte à rebours
                     return True  # Démarrer la partie
                 elif rect_bouton_quitter.collidepoint(mouse_x, mouse_y):
                     pygame.quit()
@@ -321,39 +342,43 @@ def afficher_menu_principal(ecran, ressources):
 
             else:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                rect_bouton_jouer = afficher_bouton(ecran, "Jouer", (largeur_ecran // 2, hauteur_ecran // 2),
+                rect_bouton_jouer = afficher_bouton(ecran_menu, "Jouer", (largeur_ecran_menu // 2,
+                                                                          hauteur_ecran_menu // 2),
                                                     bouton_jouer_survol)
-                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 40),
+                rect_bouton_quitter = afficher_bouton(ecran_menu, "Quitter", (largeur_ecran_menu // 2,
+                                                                              hauteur_ecran_menu // 2 + 40),
                                                       bouton_quitter_survol)
 
                 bouton_jouer_survol = rect_bouton_jouer.collidepoint(mouse_x, mouse_y)
                 bouton_quitter_survol = rect_bouton_quitter.collidepoint(mouse_x, mouse_y)
 
-                ecran.fill((0, 0, 0))  # Efface l'écran
-                afficher_bouton(ecran, "Jouer", (largeur_ecran // 2, hauteur_ecran // 2), bouton_jouer_survol)
-                afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 40), bouton_quitter_survol)
+                ecran_menu.fill((0, 0, 0))  # Efface l'écran
+                afficher_bouton(ecran_menu, "Jouer", (largeur_ecran_menu // 2, hauteur_ecran_menu // 2),
+                                bouton_jouer_survol)
+                afficher_bouton(ecran_menu, "Quitter", (largeur_ecran_menu // 2, hauteur_ecran_menu // 2 + 40),
+                                bouton_quitter_survol)
 
                 # Affiche l'image de l'autruche à côté du bouton sélectionné
                 if bouton_jouer_survol:
-                    ecran.blit(image_autruche, (autruche_x, autruche_y))
-                    ecran.blit(image_pomelo, (pomelo_x, pomelo_y))
+                    ecran_menu.blit(image_autruche, (autruche_x, autruche_y))
+                    ecran_menu.blit(image_pomelo, (pomelo_x, pomelo_y))
                 elif bouton_quitter_survol:
-                    ecran.blit(image_autruche, (autruche_x, autruche_y + 40))  # Ajustez la position
-                    ecran.blit(image_pomelo, (pomelo_x, pomelo_y + 40))
+                    ecran_menu.blit(image_autruche, (autruche_x, autruche_y + 40))  # Ajustez la position
+                    ecran_menu.blit(image_pomelo, (pomelo_x, pomelo_y + 40))
                 pygame.display.update()  # Met à jour l'écran
 
 
 def afficher_menu_pause():
     global jeu_en_pause
-    largeur_ecran = ecran.get_width()
-    hauteur_ecran = ecran.get_height()
+    largeur_ecran_menu_pause = ecran.get_width()
+    hauteur_ecran_menu_pause = ecran.get_height()
 
     bouton_reprendre_survol = False
     bouton_quitter_survol = False
 
-    autruche_x, autruche_y = largeur_ecran // 2 + 40, hauteur_ecran // 2 + 5
+    autruche_x, autruche_y = largeur_ecran_menu_pause // 2 + 40, hauteur_ecran_menu_pause // 2 + 5
     image_autruche = pygame.transform.scale(ressources['image_autruche'], (35, 35))
-    pomelo_x, pomelo_y = largeur_ecran // 2 - 80, hauteur_ecran // 2 + 5
+    pomelo_x, pomelo_y = largeur_ecran_menu_pause // 2 - 80, hauteur_ecran_menu_pause // 2 + 5
     image_pomelo = pygame.transform.scale(ressources['image_pomelo'], (35, 35))
 
     while jeu_en_pause:
@@ -364,9 +389,12 @@ def afficher_menu_pause():
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
 
-                rect_bouton_reprendre = afficher_bouton(ecran, "Reprendre", (largeur_ecran // 2, hauteur_ecran // 2 + 20),
+                rect_bouton_reprendre = afficher_bouton(ecran, "Reprendre",
+                                                        (largeur_ecran_menu_pause // 2,
+                                                         hauteur_ecran_menu_pause // 2 + 20),
                                                         bouton_reprendre_survol)
-                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 60),
+                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran_menu_pause // 2,
+                                                                         hauteur_ecran_menu_pause // 2 + 60),
                                                       bouton_quitter_survol)
 
                 if rect_bouton_reprendre.collidepoint(mouse_x, mouse_y):
@@ -376,27 +404,30 @@ def afficher_menu_pause():
                     quit()
             else:
                 mouse_x, mouse_y = pygame.mouse.get_pos()
-                rect_bouton_reprendre = afficher_bouton(ecran, "Reprendre", (largeur_ecran // 2, hauteur_ecran // 2 + 20),
+                rect_bouton_reprendre = afficher_bouton(ecran, "Reprendre",
+                                                        (largeur_ecran_menu_pause // 2,
+                                                         hauteur_ecran_menu_pause // 2 + 20),
                                                         bouton_reprendre_survol)
-                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 60),
+                rect_bouton_quitter = afficher_bouton(ecran, "Quitter", (largeur_ecran_menu_pause // 2,
+                                                                         hauteur_ecran_menu_pause // 2 + 60),
                                                       bouton_quitter_survol)
 
                 bouton_reprendre_survol = rect_bouton_reprendre.collidepoint(mouse_x, mouse_y)
                 bouton_quitter_survol = rect_bouton_quitter.collidepoint(mouse_x, mouse_y)
 
                 ecran.fill((0, 0, 0))
-                afficher_bouton(ecran, "Reprendre", (largeur_ecran // 2, hauteur_ecran // 2 + 30), bouton_reprendre_survol)
-                afficher_bouton(ecran, "Quitter", (largeur_ecran // 2, hauteur_ecran // 2 + 60), bouton_quitter_survol)
+                afficher_bouton(ecran, "Reprendre", (largeur_ecran_menu_pause // 2, hauteur_ecran_menu_pause // 2 + 30),
+                                bouton_reprendre_survol)
+                afficher_bouton(ecran, "Quitter", (largeur_ecran_menu_pause // 2,
+                                                   hauteur_ecran_menu_pause // 2 + 60), bouton_quitter_survol)
 
                 if bouton_reprendre_survol:
-                    ecran.blit(image_autruche, (autruche_x +20 , autruche_y))
+                    ecran.blit(image_autruche, (autruche_x + 20, autruche_y))
                     ecran.blit(image_pomelo, (pomelo_x - 20, pomelo_y))
                 elif bouton_quitter_survol:
                     ecran.blit(image_autruche, (autruche_x, autruche_y + 40))
                     ecran.blit(image_pomelo, (pomelo_x, pomelo_y + 40))
                 pygame.display.update()
-
-
 
 
 def check_collision(obj1_x, obj1_y, obj1_size, obj2_x, obj2_y, obj2_size):
@@ -409,7 +440,7 @@ def perdu(serpent_corps, serpent):
     global jeu_termine
     global ressources
     global high_score
-    taille_cellule =  ressources['taille_cellule']
+    taille_cellule = ressources['taille_cellule']
 
     # Mise à jour du jeu pour indiquer qu'il est terminé
     jeu_termine = True
@@ -423,11 +454,13 @@ def perdu(serpent_corps, serpent):
     # Faire disparaître le serpent
     for _ in range(10):
         for segment in serpent_corps:
-            pygame.draw.rect(ecran, ressources['couleur_fond'], [segment[0], segment[1], taille_cellule, taille_cellule])
+            pygame.draw.rect(ecran, ressources['couleur_fond'],
+                             [segment[0], segment[1], taille_cellule, taille_cellule])
         pygame.display.update()
         pygame.time.wait(100)
         for segment in serpent_corps:
-            pygame.draw.rect(ecran, ressources['couleur_snake'], [segment[0], segment[1], taille_cellule, taille_cellule])
+            pygame.draw.rect(ecran, ressources['couleur_snake'],
+                             [segment[0], segment[1], taille_cellule, taille_cellule])
         pygame.display.update()
         pygame.time.wait(100)
 
@@ -448,11 +481,11 @@ def jeu_snake():
     # variables temps pour fruit spécial
     temps_fruit_special = pygame.time.get_ticks()
     fruit_special = None
-    duree_fruit_special = 5000 # en ms
-    fruit_special_temps_Effet = 0
+    duree_fruit_special = 5000  # en ms
+    fruit_special_temps_effet = 0
     temps_apparition_fruit_special = None
     afficher_menu_principal(ecran, ressources)
-    
+
     # Initialisation de l'autruche
     taille_cellule = ressources['taille_cellule']
 
@@ -468,7 +501,6 @@ def jeu_snake():
     jeu_en_pause = False
     clock = pygame.time.Clock()
     autruche_mange = False
-    points_supplementaires = 0
 
     # Boucle principale du jeu
     while not jeu_termine:
@@ -476,13 +508,13 @@ def jeu_snake():
             if event.type == pygame.QUIT:
                 jeu_termine = True
             elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT and serpent.direction_x != taille_cellule:  # prevent going right when moving left
+                if event.key == pygame.K_LEFT and serpent.direction_x != taille_cellule:
                     serpent.change_direction(-taille_cellule, 0)
-                elif event.key == pygame.K_RIGHT and serpent.direction_x != -taille_cellule:  # prevent going left when moving right
+                elif event.key == pygame.K_RIGHT and serpent.direction_x != -taille_cellule:
                     serpent.change_direction(taille_cellule, 0)
-                elif event.key == pygame.K_UP and serpent.direction_y != taille_cellule:  # prevent going down when moving up
+                elif event.key == pygame.K_UP and serpent.direction_y != taille_cellule:
                     serpent.change_direction(0, -taille_cellule)
-                elif event.key == pygame.K_DOWN and serpent.direction_y != -taille_cellule:  # prevent going up when moving down
+                elif event.key == pygame.K_DOWN and serpent.direction_y != -taille_cellule:
                     serpent.change_direction(0, taille_cellule)
                 elif event.key == pygame.K_ESCAPE:
                     jeu_en_pause = not jeu_en_pause
@@ -501,14 +533,12 @@ def jeu_snake():
                 fruit_special = Fruit("pic/pomelos.png", "sound/pomelos.wav")
                 temps_apparition_fruit_special = pygame.time.get_ticks()
                 print("apparition fruit spécial")
-            else :
+            else:
                 fruit_special = None
 
         # Make special fruit disappear after 5 seconds
         if fruit_special and pygame.time.get_ticks() - temps_apparition_fruit_special >= 5000:
             fruit_special = None
-
-
 
         # Mise à jour de la position du serpent
         serpent.maj_position()
@@ -539,7 +569,7 @@ def jeu_snake():
             fruit_special.afficher()
 
         # Déplacement et affichage de l'autruche
-        if autruche_vivant :
+        if autruche_vivant:
             autruche.deplacer()
             autruche.afficher()
 
@@ -560,10 +590,10 @@ def jeu_snake():
             fruit_special.manger()
             autruche_mange = True
             fruit_special = None
-            fruit_special_temps_Effet = pygame.time.get_ticks() + duree_fruit_special
+            fruit_special_temps_effet = pygame.time.get_ticks() + duree_fruit_special
 
             # If effect of special fruit should end
-        if pygame.time.get_ticks() >= fruit_special_temps_Effet:
+        if pygame.time.get_ticks() >= fruit_special_temps_effet:
             autruche_mange = False
 
         # Vérification de la collision entre l'autruche et le serpent
@@ -578,10 +608,10 @@ def jeu_snake():
                 autruche_vivant = False
                 serpent.clignotement = False
             else:
-                perdu(serpent.corps)
+                perdu(serpent.corps, serpent)
 
         # Faire réapparaître l'autruche après quelques secondes
-        if not autruche_vivant and pygame.time.get_ticks() - autruche_disparition_temps >= 5000:  # 5000 millisecondes = 5 secondes
+        if not autruche_vivant and pygame.time.get_ticks() - autruche_disparition_temps >= 5000:
             autruche_vivant = True
             autruche = Autruche(random.randint(0, largeur_ecran - taille_cellule),
                                 random.randint(0, hauteur_ecran - taille_cellule * 2))
@@ -623,8 +653,6 @@ def jeu_snake():
 
         # Lancer une nouvelle boule de feu
         autruche.lancer_boule_feu()
-
-
 
         # Limite de vitesse du serpent
         clock.tick(serpent.vitesse)

@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
+
 def read_file(file_path):
     try:
         with open(file_path, 'r') as file:
@@ -12,6 +13,7 @@ def read_file(file_path):
     except Exception as e:
         return str(e)
 
+
 def write_to_file(file_path, new_content):
     try:
         with open(file_path, 'w') as file:
@@ -20,9 +22,11 @@ def write_to_file(file_path, new_content):
     except Exception as e:
         return str(e)
 
+
 @app.route('/api/get_content', methods=['GET'])
 def get_content():
     return jsonify(content=read_file("highscore.txt"))
+
 
 @app.route('/api/update_content', methods=['POST'])
 def update_content():
