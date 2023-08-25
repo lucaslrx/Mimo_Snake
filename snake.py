@@ -570,7 +570,7 @@ def jeu_snake():
         if pygame.time.get_ticks() - temps_fruit_special >= 5000 and not fruit_special:
             temps_fruit_special = pygame.time.get_ticks()
 
-            if random.randint(1, 3) == 1: # une chance sur trois
+            if random.randint(1, 4) == 1: # une chance sur quatre
                 fruit_special = Fruit("pic/pomelos.png", "sound/pomelos.wav")
                 temps_apparition_fruit_special = pygame.time.get_ticks()
             else:
@@ -614,7 +614,7 @@ def jeu_snake():
             autruche.afficher()
 
         # Déplacement et affichage du Florian
-        if serpent.longueur > 10 and florian_est_arrive is False:
+        if serpent.longueur > 20 and florian_est_arrive is False:
             # Initialisation du Florian
             florian = Florian(random.randint(0, largeur_ecran - taille_cellule),
                               random.randint(0, hauteur_ecran - taille_cellule * 2))
@@ -644,7 +644,7 @@ def jeu_snake():
             fruit_special = None
             fruit_special_temps_effet = pygame.time.get_ticks() + duree_fruit_special
 
-            # If effect of special fruit should end
+            # fin de l'effet du fruit spécial au bout d'un moment
         if pygame.time.get_ticks() >= fruit_special_temps_effet:
             autruche_mange = False
 
