@@ -683,7 +683,7 @@ def jeu_snake():
                 perdu(serpent.corps, serpent)
 
         # collision des boules de feues de Florian et du serpent
-        if florian_est_arrive and florian.boule_feu:
+        if florian_est_arrive and florian.boule_feu is not None:
             florian.boule_feu.deplacer()
             florian.boule_feu.afficher()
             if check_collision(serpent.x, serpent.y, taille_cellule, florian.boule_feu.x, florian.boule_feu.y,
