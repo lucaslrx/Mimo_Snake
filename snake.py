@@ -253,7 +253,7 @@ def enregistrer_highscore(score):
 
 
 def charger_highscore():
-    reponse = requests.get("http://localhost:5000/api/get_content")
+    reponse = requests.get("http://127.0.0.1:5000/api/get_content")
     data = reponse.json()
     contenu = data.get('content')
     if contenu:
@@ -548,10 +548,6 @@ def jeu_snake():
 
         # Affichage de la pomelos
         pomelos.afficher()
-        # apparition fruit spécial
-        if fruit_special:
-            print(f"Prêt à afficher le fruit spécial à ({fruit_special.x}, {fruit_special.y})")
-            fruit_special.afficher()
 
         # Déplacement et affichage de l'autruche
         if autruche_vivant:
