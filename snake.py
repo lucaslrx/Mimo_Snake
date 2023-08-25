@@ -2,13 +2,14 @@ import pygame
 import random
 import requests
 
+# Déclaration d'une variable globale pour les ressources
 global ressources
 
-# Initialisation de Pygame
+# Initialisation des modules de Pygame
 pygame.init()
 pygame.mixer.init()
 
-# Définition des dimensions de l'écran
+# Définition des dimensions de l'écran de jeu
 largeur_ecran = 640
 hauteur_ecran = 480
 
@@ -16,26 +17,43 @@ hauteur_ecran = 480
 ecran = pygame.display.set_mode((largeur_ecran, hauteur_ecran))
 pygame.display.set_caption("Snake Game")
 
+# Variables de jeu
 jeu_termine = False
 high_score = 0
 jeu_en_pause = False
 
 
 class Fruit:
+    """Définition d'un fruit"""
     global ressources
 
-    def __init__(self, image_path, sound_path):
+    def __init__(self, chemin_image, chemin_son):
+        """
+        Constructeur de la classe. prend deux paramètres
+        :param chemin_image:  chemin de l'image du fruit
+        :param chemin_son:  chemin du son
+        """
         taille_cellule = ressources['taille_cellule']
+        # Apparition au hasard dans les limites de l'écran
         self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
         self.y = round(random.randrange(0, hauteur_ecran - taille_cellule) / taille_cellule) * taille_cellule
-        self.image = pygame.image.load(image_path)
+        self.image = pygame.image.load(chemin_image)
         self.image = pygame.transform.scale(self.image, ((int(taille_cellule * 1.3)), (int(taille_cellule * 1.3))))
-        self.sound = pygame.mixer.Sound(sound_path)
+        self.sound = pygame.mixer.Sound(chemin_son)
 
     def afficher(self):
+        """
+        Méthode d'affichage
+        :return:
+        """
         ecran.blit(self.image, (self.x, self.y))
 
     def manger(self):
+        """
+        Si collision avec le serpent, on apppelle la méthode manger
+        elle joue un son et fait réapparaitre le pomelo à un autre endroit
+        :return:
+        """
         taille_cellule = ressources['taille_cellule']
         self.sound.play()
         self.x = round(random.randrange(0, largeur_ecran - taille_cellule) / taille_cellule) * taille_cellule
@@ -44,15 +62,27 @@ class Fruit:
 
 # Classe pour la boule de feu
 class BouleFeu:
+    """
+    Création de la classe boule de feu
+    """
     global ressources
 
-    def __init__(self, x, y, direction, vitesse=3, image_path='pic/fireball.png'):
+    def __init__(self, x, y, direction, vitesse=3, chemin_image='pic/fireball.png'):
+        """
+        Constructeur de la classe. Prend :
+        :param x: la latitude
+        :param y: la longitude
+        :param direction: la direction de la boule de feu
+        :param vitesse: la vitesse
+        :param chemin_image : chemin du fichier de l'image
+        """
         taille_cellule = ressources['taille_cellule']
         self.x = x
         self.y = y
         self.direction = direction
         self.vitesse = vitesse
-        self.images = [pygame.transform.scale(pygame.image.load(image_path),
+        # Clignotement de l'image : on fait défiler trois images avec des teintes différentes assez vite
+        self.images = [pygame.transform.scale(pygame.image.load(chemin_image),
                                               (int(taille_cellule * 1.1), int(taille_cellule * 1.3))),
                        pygame.transform.scale(pygame.image.load('pic/fireball2.png'),
                                               (int(taille_cellule * 1.1), int(taille_cellule * 1.3))),
@@ -63,12 +93,16 @@ class BouleFeu:
         self.image_counter_limit = 5  # Nombre d'images avant de passer à la suivante
 
     def deplacer(self):
+        """
+        Déplacement de la boule de feu
+        """
         if self.direction == "gauche":
             self.x -= self.vitesse
         elif self.direction == "droite":
             self.x += self.vitesse
 
     def afficher(self):
+        """Affichage de la boule de feu avec la fonction de clignotement"""
         ecran.blit(self.images[self.current_image], (self.x, self.y))
         # On incrémente le compteur d'images à chaque appel de la fonction
         self.image_counter += 1
@@ -80,9 +114,17 @@ class BouleFeu:
 
 # Classe pour l'autruche
 class Autruche:
+    """
+    Classe de l'autruche 
+    """
     global ressources
 
     def __init__(self, x, y):
+        """
+        Constructeur avec deux paramètres :
+        - ordonnées (x)
+        - abscisse (y)
+        """
         image_autruche = ressources['image_autruche']
         self.vitesse = 5
         self.boule_feu = None
@@ -92,22 +134,31 @@ class Autruche:
         self.image = image_autruche
 
         marge_exclusion = 3 * ressources['taille_cellule']
+        # coordonnées du centre
         centre_x = largeur_ecran // 2
         centre_y = hauteur_ecran // 2
 
-        while True:
+        while True:  # Cette boucle permet de s'assurer que l'autruche n'apparait pas au milieu de l'écran dès le début
+            # du jeu !
+            # Génération d'une position x aléatoire pour l'objet sur l'écran, en se basant sur la taille de la cellule
             self.x = round(
                 random.randrange(0, largeur_ecran - ressources['taille_cellule']) / ressources['taille_cellule']) * \
                      ressources['taille_cellule']
+            # Génération d'une position y aléatoire pour l'objet sur l'écran, en se basant sur la taille de la cellule.
             self.y = round(
                 random.randrange(0, hauteur_ecran - ressources['taille_cellule']) / ressources['taille_cellule']) * \
                      ressources['taille_cellule']
-
+            # Vérification : on s'assure que les coordonnées ne sont pas proches du centre
+            # centre défini par les variables centre_x et y + une marge d'exclusion
+            # Si les coordonnées sont en dehors de cette zone, la boucle est terminée et les coordonnées sont fixées
             if not (centre_x - marge_exclusion <= self.x <= centre_x + marge_exclusion and
                     centre_y - marge_exclusion <= self.y <= centre_y + marge_exclusion):
                 break
 
     def deplacer(self):
+        """
+        Déplacement de l'autruche
+        """
         taille_cellule = ressources['taille_cellule']
         image_autruche = ressources['image_autruche']
         image_autruche_gauche = ressources['image_autruche_gauche']
@@ -131,9 +182,15 @@ class Autruche:
             self.image = image_autruche
 
     def afficher(self):
+        """
+        Affichage de l'autruche à l'écran
+        """
         ecran.blit(self.image, (self.x, self.y))
 
     def lancer_boule_feu(self):
+        """
+        On crée une instance boule de feu à partir de cette fonction
+        """
         son_autruche = ressources['son_autruche']
         taille_cellule = ressources['taille_cellule']
         if self.boule_feu is None:
@@ -144,24 +201,28 @@ class Autruche:
 
 # Classe pour Florian
 class Florian(Autruche):
+    """Extension de autruche"""
     def __init__(self, x, y):
+        """Constructeur de Florian, idem que autruche"""
         super().__init__(x, y)
-        self.vitesse = 10  # Vitesse augmentée pour l'ennemi rapide
+        self.vitesse = 10  # Vitesse augmentée car Florian est rapide comme l'éclair
         image_florian = ressources['image_florian']
         self.image = image_florian
         self.image_droite = image_florian
         self.image_florian_gauche = ressources['image_florian_gauche']
 
     def lancer_boule_feu(self):
+        """ fonction boule de feu, idem que autruche mais avec une image différente"""
         son_florian = pygame.mixer.Sound("sound/florian.wav")
         taille_cellule = ressources['taille_cellule']
         if self.boule_feu is None:
             direction = random.choice(["gauche", "droite"])
             self.boule_feu = BouleFeu(self.x, self.y + taille_cellule, direction, vitesse=5,
-                                      image_path='pic/pull.png')
+                                      chemin_image='pic/pull.png')
             son_florian.play()
 
     def deplacer(self):
+        """fonction déplacer de Florian"""
         super().deplacer()  # Appel de la méthode deplacer() de la classe parente Autruche
         # changer l'image de Florian selon la direction
         if self.direction_x > 0:
@@ -172,6 +233,9 @@ class Florian(Autruche):
 
 class Serpent:
     def __init__(self, x, y, longueur, vitesse):
+        """
+        Initialisation du serpent avec les paramètres de coordonnées, de longueur et de vitesse
+        """
         self.x = x
         self.y = y
         self.longueur = longueur
@@ -179,36 +243,63 @@ class Serpent:
         self.direction_x = 0
         self.direction_y = 0
         self.corps = [[self.x, self.y]]
-        self.tue_autruche = False
-        self.clignotement = False
+        self.clignotement = False  # booléen pour le clignotement en cas d'ingestion de fruit spécial
 
     def maj_position(self):
+        """
+        Met à jour la position du serpent en fonction de sa direction actuelle
+        ajoute la nouvelle position à la fin de la liste "corps" du serpent
+        Si la taille du corps dépasse la longueur du serpent, la plus ancienne position est supprimée
+        Cela permet le déplacement du serpent
+        """
+        # Mise à jour des coordonnées du serpent en fonction de sa direction
         self.x += self.direction_x
         self.y += self.direction_y
+        # ajout de la nouvelle position à la fin de la liste "corps"
         self.corps.append([self.x, self.y])
+        # Suppression de la position la plus ancienne
         if len(self.corps) > self.longueur:
             del self.corps[0]
 
     def change_direction(self, direction_x, direction_y):
+        """
+        Changement de direction en fonction des coordonnées
+        """
         self.direction_x = direction_x
         self.direction_y = direction_y
 
     def collision_mur(self, largeur_limite, hauteur_limite):
+        """
+        Vérifie si le serpent heurte un mur en fonction de ses coordonnées
+        Si le serpent heurte un mur, cela retourne True
+        """
         return self.x >= largeur_limite or self.x < 0 or self.y >= hauteur_limite or self.y < 0
 
     def collision_soi_meme(self):
+        """
+        Retourne true si le serpent s'est heurté lui-même en comparant la position de sa tête
+        avec le reste de son corps
+        """
         return [self.x, self.y] in self.corps[:-1]
 
     def manger_pomelos(self):
+        """
+        On ajoute un carré au serpent si il mange un délicieux pomelos !
+        """
         self.longueur += 1
 
     def dessiner(self, ecran_dessiner, taille_cellule, couleur_snake, image_tete):
+        """
+        Dessine le serpent sur l'écran en fonction de ses coordonnées actuelles,
+        de sa direction et de son état (clignotement ou non).
+        """
         for index, segment in enumerate(self.corps):
+            # si le serpent clignote, alors on met un timer pour aller du vert au jaune
             if self.clignotement and pygame.time.get_ticks() % 250 < 125:  # le serpent clignote en jaune
                 pygame.draw.rect(ecran_dessiner, ressources['couleur_clignotement'],
                                  [segment[0], segment[1], taille_cellule, taille_cellule])
                 continue
-
+            # Gestion de l'apparence de la tête
             if index == len(self.corps) - 1:  # Si le segment est la tête
                 if self.direction_y == -taille_cellule:  # Aller vers le haut
                     image_tete_rotated = pygame.transform.rotate(image_tete, 180)
@@ -218,7 +309,7 @@ class Serpent:
                     image_tete_rotated = pygame.transform.rotate(image_tete, 270)
                 else:  # Aller vers la droite
                     image_tete_rotated = pygame.transform.rotate(image_tete, 90)
-
+                # Affichage de la tête du serpent
                 ecran_dessiner.blit(image_tete_rotated, (segment[0] - taille_cellule * 0.25, segment[1]
                                                          - taille_cellule * 0.25))
             else:  # Sinon c'est le corps
@@ -226,6 +317,10 @@ class Serpent:
                                  [segment[0], segment[1], taille_cellule, taille_cellule])
 
     def clignoter(self, etat):
+        """
+        Modifie l'état du clignotement du serpent. Si True, alors il commence à clignoter
+        Si False alors il s'arrête
+        """
         self.clignotement = etat
 
 
@@ -233,6 +328,8 @@ class Serpent:
 
 
 def charger_ressources():
+    # dans cette fonction, on charge toutes les ressources essentielles du jeu
+    # dans un dictionnaire, ce qui permet de les appeler rapidement si besoin
     taille_cellule = 20
 
     # Chargement des images
@@ -291,16 +388,25 @@ def charger_ressources():
 
 
 def afficher_score(longueur, police):
+    """
+    Affichage du score sur l'écran
+    """
     texte = police.render("Pomelos: " + str(longueur), True, (255, 255, 255))
     ecran.blit(texte, (10, 10))
 
 
 def enregistrer_highscore(score):
+    """
+    Enregistrement du high score en passant par une API
+    """
     payload = {"new_content": str(score)}
     requests.post("http://127.0.0.1:5000/api/update_content", json=payload)
 
 
 def charger_highscore():
+    """
+    Chargement du high score via une API
+    """
     reponse = requests.get("http://127.0.0.1:5000/api/get_content")
     data = reponse.json()
     contenu = data.get('content')
@@ -311,6 +417,10 @@ def charger_highscore():
 
 
 def compte_a_rebours(ecran_compte, ressources_compte):
+    """
+    Compte à rebours avant le début du jeu
+
+    """
     police = ressources_compte['police']
     for i in range(3, 0, -1):
         ecran_compte.fill(ressources_compte['couleur_fond'])
@@ -328,6 +438,7 @@ def compte_a_rebours(ecran_compte, ressources_compte):
 
 
 def afficher_bouton(ecran_bouton, texte, position, survol):
+    """ Affichage des boutons du menu"""
     police = ressources['police']
     couleur_texte = (255, 255, 255)
     couleur_survol = (200, 200, 200)
@@ -342,25 +453,36 @@ def afficher_bouton(ecran_bouton, texte, position, survol):
 
 
 def afficher_menu_principal(ecran_menu, ressources_menu):
+    """
+    Affichage du menu principal
+    Les interfaces avec l'utilisateur sont également gérées
+    """
+
+    # Dimensions de l'écran
     largeur_ecran_menu = ecran_menu.get_width()
     hauteur_ecran_menu = ecran_menu.get_height()
 
+    # états initiaux pour définir si le curseur survole les boutons ou pas
     bouton_jouer_survol = False
     bouton_quitter_survol = False
 
+    # Quelques icônes de menus
     autruche_x, autruche_y = largeur_ecran_menu // 2 + 40, hauteur_ecran_menu // 2 - 25
-    image_autruche = pygame.transform.scale(ressources_menu['image_autruche'], (35, 35))  # Ajustez la taille
+    image_autruche = pygame.transform.scale(ressources_menu['image_autruche'], (35, 35))
     pomelo_x, pomelo_y = largeur_ecran_menu // 2 - 80, hauteur_ecran_menu // 2 - 25
     image_pomelo = pygame.transform.scale(ressources_menu['image_pomelo'], (35, 35))
 
+    # boucle principale de gestion des interractions
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
+                # coordonnées du curseur
                 mouse_x, mouse_y = pygame.mouse.get_pos()
 
+                # affichage des boutons + on récupère leur zone de collision
                 rect_bouton_jouer = afficher_bouton(ecran_menu, "Jouer",
                                                     (largeur_ecran_menu // 2, hauteur_ecran_menu // 2),
                                                     bouton_jouer_survol)
@@ -404,6 +526,8 @@ def afficher_menu_principal(ecran_menu, ressources_menu):
 
 
 def afficher_menu_pause():
+    """Gestion du menu de pause du jeu
+    Fonctionnement similaire au menu principal avec gestion de l'interface"""
     global jeu_en_pause
     largeur_ecran_menu_pause = ecran.get_width()
     hauteur_ecran_menu_pause = ecran.get_height()
@@ -466,12 +590,18 @@ def afficher_menu_pause():
 
 
 def check_collision(obj1_x, obj1_y, obj1_size, obj2_x, obj2_y, obj2_size):
+    """
+    Permet de vérifier rapidement si deux objets sont en collision en comparant leurs
+    coordonnés et tailles
+    """
     if (obj2_x - obj1_size) < obj1_x < (obj2_x + obj2_size) and (obj2_y - obj1_size) < obj1_y < (obj2_y + obj2_size):
         return True
     return False
 
 
 def perdu(serpent_corps, serpent):
+    """Fonction qui met toutes les variables
+    à jour en fin de jeu"""
     global jeu_termine
     global ressources
     global high_score
@@ -570,7 +700,7 @@ def jeu_snake():
         if pygame.time.get_ticks() - temps_fruit_special >= 5000 and not fruit_special:
             temps_fruit_special = pygame.time.get_ticks()
 
-            if random.randint(1, 4) == 1: # une chance sur quatre
+            if random.randint(1, 4) == 1:  # une chance sur quatre
                 fruit_special = Fruit("pic/pomelos.png", "sound/pomelos.wav")
                 temps_apparition_fruit_special = pygame.time.get_ticks()
             else:
@@ -605,7 +735,7 @@ def jeu_snake():
         pomelos.afficher()
 
         # Affichage du fruit spécial
-        if fruit_special :
+        if fruit_special:
             fruit_special.afficher()
 
         # Déplacement et affichage de l'autruche
