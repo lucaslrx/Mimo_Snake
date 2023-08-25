@@ -253,27 +253,13 @@ def enregistrer_highscore(score):
 
 
 def charger_highscore():
-    try:
-        reponse = requests.get("http://127.0.0.1:5000/api/get_content")
-
-        # Vérification du code de statut HTTP
-        if reponse.status_code != 200:
-            print(f"Erreur avec le code de statut: {reponse.status_code}")
-            return 0
-
-        data = reponse.json()
-        contenu = data.get('content')
-        if contenu:
-            return int(contenu)
-        else:
-            return 0
-    except requests.exceptions.RequestException as e:
-        print(f"Erreur de requête: {e}")
+    reponse = requests.get("http://localhost:5000/api/get_content")
+    data = reponse.json()
+    contenu = data.get('content')
+    if contenu:
+        return int(contenu)
+    else:
         return 0
-    except json.decoder.JSONDecodeError:
-        print("Erreur lors du décodage du JSON.")
-        return 0
-
 
 def compte_a_rebours(ecran_compte, ressources_compte):
     police = ressources_compte['police']
@@ -532,7 +518,6 @@ def jeu_snake():
             if random.randint(1, 5) == 1:
                 fruit_special = Fruit("pic/pomelos.png", "sound/pomelos.wav")
                 temps_apparition_fruit_special = pygame.time.get_ticks()
-                print("apparition fruit spécial")
             else:
                 fruit_special = None
 
