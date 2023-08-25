@@ -570,13 +570,13 @@ def jeu_snake():
         if pygame.time.get_ticks() - temps_fruit_special >= 5000 and not fruit_special:
             temps_fruit_special = pygame.time.get_ticks()
 
-            if random.randint(1, 5) == 1:
+            if random.randint(1, 3) == 1: # une chance sur trois
                 fruit_special = Fruit("pic/pomelos.png", "sound/pomelos.wav")
                 temps_apparition_fruit_special = pygame.time.get_ticks()
             else:
                 fruit_special = None
 
-        # Make special fruit disappear after 5 seconds
+        # Faire disparaitre le fruit spécial au bout de cinq secondes
         if fruit_special and pygame.time.get_ticks() - temps_apparition_fruit_special >= 5000:
             fruit_special = None
 
@@ -601,8 +601,12 @@ def jeu_snake():
         image_fond = ressources['image_fond']
         ecran.blit(image_fond, (0, 0))
 
-        # Affichage de la pomelos
+        # Affichage du pomelos
         pomelos.afficher()
+
+        # Affichage du fruit spécial
+        if fruit_special :
+            fruit_special.afficher()
 
         # Déplacement et affichage de l'autruche
         if autruche_vivant and serpent_a_bouge:
