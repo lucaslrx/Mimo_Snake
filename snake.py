@@ -46,13 +46,13 @@ class Fruit:
 class BouleFeu:
     global ressources
 
-    def __init__(self, x, y, direction):
+    def __init__(self, x, y, direction, vitesse=3, image_path='pic/fireball.png'):
         taille_cellule = ressources['taille_cellule']
         self.x = x
         self.y = y
         self.direction = direction
-        self.vitesse = 3
-        self.images = [pygame.transform.scale(pygame.image.load('pic/fireball.png'),
+        self.vitesse = vitesse
+        self.images = [pygame.transform.scale(pygame.image.load(image_path),
                                               (int(taille_cellule * 1.1), int(taille_cellule * 1.3))),
                        pygame.transform.scale(pygame.image.load('pic/fireball2.png'),
                                               (int(taille_cellule * 1.1), int(taille_cellule * 1.3))),
@@ -84,14 +84,28 @@ class Autruche:
 
     def __init__(self, x, y):
         image_autruche = ressources['image_autruche']
-        self.x = x
-        self.y = y
         self.vitesse = 5
         self.boule_feu = None
         self.direction_x = 1
         self.direction_y = 1
         self.changement_direction_probabilite = 0.05
         self.image = image_autruche
+
+        marge_exclusion = 3 * ressources['taille_cellule']
+        centre_x = largeur_ecran // 2
+        centre_y = hauteur_ecran // 2
+
+        while True:
+            self.x = round(
+                random.randrange(0, largeur_ecran - ressources['taille_cellule']) / ressources['taille_cellule']) * \
+                     ressources['taille_cellule']
+            self.y = round(
+                random.randrange(0, hauteur_ecran - ressources['taille_cellule']) / ressources['taille_cellule']) * \
+                ressources['taille_cellule']
+
+            if not (centre_x - marge_exclusion <= self.x <= centre_x + marge_exclusion and
+                    centre_y - marge_exclusion <= self.y <= centre_y + marge_exclusion):
+                break
 
     def deplacer(self):
         taille_cellule = ressources['taille_cellule']
@@ -126,6 +140,34 @@ class Autruche:
             direction = random.choice(["gauche", "droite"])
             self.boule_feu = BouleFeu(self.x, self.y + taille_cellule, direction)
             son_autruche.play()
+
+
+# Classe pour Florian
+class Florian(Autruche):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.vitesse = 10  # Vitesse augmentée pour l'ennemi rapide
+        image_florian = ressources['image_florian']
+        self.image = image_florian
+        self.image_droite = image_florian
+        self.image_florian_gauche = ressources['image_florian_gauche']
+
+    def lancer_boule_feu(self):
+        son_florian = pygame.mixer.Sound("sound/florian.wav")
+        taille_cellule = ressources['taille_cellule']
+        if self.boule_feu is None:
+            direction = random.choice(["gauche", "droite"])
+            self.boule_feu = BouleFeu(self.x, self.y + taille_cellule, direction, vitesse=5,
+                                      image_path='pic/pull.png')
+            son_florian.play()
+
+    def deplacer(self):
+        super().deplacer()  # Appel de la méthode deplacer() de la classe parente Autruche
+        # changer l'image de Florian selon la direction
+        if self.direction_x > 0:
+            self.image = self.image_florian_gauche
+        else:
+            self.image = self.image_droite
 
 
 class Serpent:
@@ -204,6 +246,10 @@ def charger_ressources():
     image_autruche = pygame.transform.scale(image_autruche, (taille_cellule, taille_cellule * 2))
     image_autruche_gauche = pygame.transform.flip(image_autruche, True, False)
 
+    image_florian = pygame.image.load("pic/autruche_florian.png")
+    image_florian = pygame.transform.scale(image_florian, (taille_cellule, taille_cellule * 2))
+    image_florian_gauche = pygame.transform.flip(image_florian, True, False)
+
     image_pomelo = pygame.image.load("pic/pomelos1.png")  # Chemin vers l'image du pomelo
     image_pomelo = pygame.transform.scale(image_pomelo, (35, 35))  # Ajustez la taille du pomelo
 
@@ -238,7 +284,9 @@ def charger_ressources():
         'police': police,
         'couleur_snake': couleur_snake,
         'couleur_fond': couleur_fond,
-        'couleur_clignotement': couleur_clignotement
+        'couleur_clignotement': couleur_clignotement,
+        'image_florian': image_florian,
+        'image_florian_gauche': image_florian_gauche
     }
 
 
@@ -260,6 +308,7 @@ def charger_highscore():
         return int(contenu)
     else:
         return 0
+
 
 def compte_a_rebours(ecran_compte, ressources_compte):
     police = ressources_compte['police']
@@ -480,6 +529,7 @@ def jeu_snake():
     autruche_vivant = True
     autruche_disparition_temps = None
 
+
     pomelos = Fruit("pic/pomelos1.png", "sound/pomelos.wav")
 
     # Variables de contrôle du jeu
@@ -487,6 +537,8 @@ def jeu_snake():
     jeu_en_pause = False
     clock = pygame.time.Clock()
     autruche_mange = False
+    serpent_a_bouge = False
+    florian_est_arrive = False
 
     # Boucle principale du jeu
     while not jeu_termine:
@@ -496,12 +548,16 @@ def jeu_snake():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT and serpent.direction_x != taille_cellule:
                     serpent.change_direction(-taille_cellule, 0)
+                    serpent_a_bouge = True
                 elif event.key == pygame.K_RIGHT and serpent.direction_x != -taille_cellule:
                     serpent.change_direction(taille_cellule, 0)
+                    serpent_a_bouge = True
                 elif event.key == pygame.K_UP and serpent.direction_y != taille_cellule:
                     serpent.change_direction(0, -taille_cellule)
+                    serpent_a_bouge = True
                 elif event.key == pygame.K_DOWN and serpent.direction_y != -taille_cellule:
                     serpent.change_direction(0, taille_cellule)
+                    serpent_a_bouge = True
                 elif event.key == pygame.K_ESCAPE:
                     jeu_en_pause = not jeu_en_pause
                     if jeu_en_pause:
@@ -550,9 +606,21 @@ def jeu_snake():
         pomelos.afficher()
 
         # Déplacement et affichage de l'autruche
-        if autruche_vivant:
+        if autruche_vivant and serpent_a_bouge:
             autruche.deplacer()
             autruche.afficher()
+
+        # Déplacement et affichage du Florian
+        if serpent.longueur > 10 and florian_est_arrive == False:
+            # Initialisation du Florian
+            florian = Florian(random.randint(0, largeur_ecran - taille_cellule),
+                              random.randint(0, hauteur_ecran - taille_cellule * 2))
+            florian_est_arrive = True
+
+        if florian_est_arrive == True :
+            florian.deplacer()
+            florian.afficher()
+            florian.lancer_boule_feu()
 
         # Vérification de la collision entre la boule de feu et le serpent
         if autruche.boule_feu is not None:
@@ -606,6 +674,24 @@ def jeu_snake():
         # Vérification des collisions avec le corps du serpent
         if serpent.collision_soi_meme():
             perdu(serpent.corps, serpent)
+
+        # collision avec le Florian
+        if florian_est_arrive == True :
+            if check_collision(serpent.x, serpent.y, taille_cellule, florian.x, florian.y,
+                               taille_cellule):
+                ressources['son_boule_de_feu'].play()
+                perdu(serpent.corps, serpent)
+
+        # collision des boules de feues de Florian et du serpent
+        if florian_est_arrive and florian.boule_feu:
+            florian.boule_feu.deplacer()
+            florian.boule_feu.afficher()
+            if check_collision(serpent.x, serpent.y, taille_cellule, florian.boule_feu.x, florian.boule_feu.y,
+                               taille_cellule):
+                ressources['son_boule_de_feu'].play()
+                perdu(serpent.corps, serpent)
+            if florian.boule_feu.x < 0 or florian.boule_feu.x >= largeur_ecran:
+                florian.boule_feu = None
 
         # Dessin du serpent
         serpent.dessiner(ecran, taille_cellule, ressources['couleur_snake'], ressources['image_tete'])
