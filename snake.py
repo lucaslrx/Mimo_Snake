@@ -101,7 +101,7 @@ class Autruche:
                      ressources['taille_cellule']
             self.y = round(
                 random.randrange(0, hauteur_ecran - ressources['taille_cellule']) / ressources['taille_cellule']) * \
-                ressources['taille_cellule']
+                     ressources['taille_cellule']
 
             if not (centre_x - marge_exclusion <= self.x <= centre_x + marge_exclusion and
                     centre_y - marge_exclusion <= self.y <= centre_y + marge_exclusion):
@@ -529,7 +529,6 @@ def jeu_snake():
     autruche_vivant = True
     autruche_disparition_temps = None
 
-
     pomelos = Fruit("pic/pomelos1.png", "sound/pomelos.wav")
 
     # Variables de contrôle du jeu
@@ -611,13 +610,13 @@ def jeu_snake():
             autruche.afficher()
 
         # Déplacement et affichage du Florian
-        if serpent.longueur > 10 and florian_est_arrive == False:
+        if serpent.longueur > 10 and florian_est_arrive is False:
             # Initialisation du Florian
             florian = Florian(random.randint(0, largeur_ecran - taille_cellule),
                               random.randint(0, hauteur_ecran - taille_cellule * 2))
             florian_est_arrive = True
 
-        if florian_est_arrive == True :
+        if florian_est_arrive:
             florian.deplacer()
             florian.afficher()
             florian.lancer_boule_feu()
@@ -676,7 +675,7 @@ def jeu_snake():
             perdu(serpent.corps, serpent)
 
         # collision avec le Florian
-        if florian_est_arrive == True :
+        if florian_est_arrive:
             if check_collision(serpent.x, serpent.y, taille_cellule, florian.x, florian.y,
                                taille_cellule):
                 ressources['son_boule_de_feu'].play()
